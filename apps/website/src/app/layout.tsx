@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: { default: `${company.name} | Laboratory & Diagnostic Supplies`, template: `%s | ${company.name}` },
   description: company.description,
   robots: { index: company.allowIndexing, follow: company.allowIndexing },
-  icons: { icon: '/brand/favicon.svg', shortcut: '/brand/favicon.svg', apple: '/brand/apple-touch-icon.png' },
+  icons: { icon: '/brand/favicon.svg?v=2', shortcut: '/brand/favicon.svg?v=2', apple: '/brand/apple-touch-icon.png?v=2' },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

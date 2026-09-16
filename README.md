@@ -10,7 +10,7 @@ There is no checkout, payment processing, billing software or admin panel in thi
 | Location | Responsibility |
 | --- | --- |
 | `apps/website` | The public Next.js website |
-| `packages/ui` | Shared wordmark and small presentation primitives |
+| `packages/ui` | Shared presentation primitives |
 | `packages/config` | Central business details and indexing configuration |
 | `packages/types` | Product, category and enquiry contracts |
 | `docs` | Catalogue review notes, imagery provenance and handover |
@@ -122,10 +122,12 @@ For the exact Vercel app-directory install check, run `npm ci --prefix ../..` fr
 
 ## Branding and imagery
 
-No approved logo was present in the empty repository. The isolated `Brand` component
-uses the requested temporary HITECH wordmark. Put approved SVG assets under
-`apps/website/public/brand` and set `company.logo.light` / `company.logo.dark` to their
-public paths to replace it. The H favicon is temporary too.
+The isolated `Brand` component uses the custom H symbol with a laboratory flask
+formed in its negative space, paired with bespoke HITECH lettering. Real vector
+SVG artwork lives under `apps/website/public/brand`; all lettering is outlined,
+so the logo requires no external font. `company.logo.light` / `company.logo.dark`
+select the primary and white versions. The favicon and touch icon use the same mark.
+See `docs/brand.md` for variants, exact colors and usage guidance.
 
 Three locally stored generated laboratory images are illustrative, not photographs
 of the business premises or exact catalogue products. Product illustrations are

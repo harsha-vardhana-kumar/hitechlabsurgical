@@ -8,7 +8,7 @@ export const company = {
   email: process.env.NEXT_PUBLIC_COMPANY_EMAIL?.trim() || '',
   address: process.env.NEXT_PUBLIC_COMPANY_ADDRESS?.trim() || '',
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '',
-  // Replace with an approved local SVG under /public/brand when supplied.
-  logo: { light: '', dark: '' },
+  // Primary color artwork on light surfaces; white artwork on dark surfaces.
+  logo: { light: '/brand/hitech-logo.svg', dark: '/brand/hitech-logo-white.svg' },
   allowIndexing: process.env.NEXT_PUBLIC_ALLOW_INDEXING === 'true' && process.env.VERCEL_ENV !== 'preview',
 } as const;
