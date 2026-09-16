@@ -1,0 +1,27 @@
+{
+  "generationMode": "built-in image_gen",
+  "notes": "Exactly one generation per asset. WebP copies are re-encodes only; no crops or visual edits. All images are illustrative and do not represent exact catalog products or business premises.",
+  "assets": [
+    {
+      "key": "hero",
+      "width": 1536,
+      "height": 1024,
+      "webp": "apps/website/public/images/laboratory.webp",
+      "prompt": "Use case: product-mockup\nAsset type: original editorial photograph for a premium B2B laboratory supply website hero, landscape 1536x1024.\nPrimary request: photorealistic laboratory still life featuring a premium modern white optical microscope prominently on the right with clear glass beakers and test tubes on an immaculate pale blue laboratory bench.\nComposition/framing: landscape, microscope occupying the right and center, generous clean negative space toward the left, subjects composed safely for responsive cropping. Eye-level three-quarter product photography with believable equipment proportions and clear crisp detail.\nScene/backdrop: clean pale ice blue studio laboratory setting with subtle depth, restrained deep teal and navy details.\nLighting/mood: soft bright premium editorial photographic light, clean glass reflections, subtle natural shadows.\nColor palette: ice white with navy #092740, scientific blue #0769af, teal #118c91 accents.\nMaterials/textures: realistic white microscope housing and black optical components, polished clear glass and a matte pale blue bench.\nConstraints: no people, no words, no letters, no labels, no logos, no brands, no certifications, no watermark. Illustrative equipment scene, no business premises. Render one image only."
+    },
+    {
+      "key": "consumables",
+      "width": 1536,
+      "height": 1024,
+      "webp": "apps/website/public/images/consumables.webp",
+      "prompt": "Use case: product-mockup\nAsset type: original category photograph for a premium B2B laboratory supply website, landscape 1536x1024.\nPrimary request: clean photorealistic studio still life of unbranded clear specimen containers, colored cap collection tubes arranged in a rack, and pipette tips.\nComposition/framing: horizontal product group composition with clear separated silhouettes, the laboratory consumables centered and comfortably framed for category-card cropping, believable equipment shapes, no packaging clutter.\nScene/backdrop: pale ice blue studio background and laboratory surface, subtle depth, restrained teal details.\nLighting/mood: bright soft studio light, sharp realistic scientific equipment, crisp transparent plastic reflections and gentle shadows.\nColor palette: ice white with navy #092740, scientific blue #0769af, teal #118c91 accents; restrained colored collection tube caps.\nConstraints: no people, no labels, no text, no words, no letters, no logos, no brands, no certifications, no watermark. Illustrative equipment scene. Render one image only."
+    },
+    {
+      "key": "reagents",
+      "width": 1536,
+      "height": 1024,
+      "webp": "apps/website/public/images/reagents.webp",
+      "prompt": "Use case: product-mockup\nAsset type: original category photograph for a premium B2B laboratory supply website, landscape 1536x1024.\nPrimary request: clean photorealistic studio still life of several unbranded amber and clear glass reagent bottles with blue caps, alongside clear glass laboratory vessels.\nComposition/framing: horizontal product group, balanced varied bottle heights and laboratory glassware, objects centered and comfortably framed for category-card cropping; realistic glassware proportions, clear separated silhouettes.\nScene/backdrop: pale ice blue studio background and bench with subtle navy depth, calm scientific atmosphere.\nLighting/mood: bright premium studio photography, crisp reflections through amber and clear glass, soft grounded shadows.\nColor palette: ice white with navy #092740, scientific blue #0769af and subtle teal #118c91 details, amber bottle glass.\nConstraints: no people, no labels, no text, no words, no letters, no logos, no brands, no certifications, no watermark. Illustrative equipment scene. Render one image only."
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@hitech/website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "node ../../scripts/start.mjs",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@hitech/config": "*",
+    "@hitech/types": "*",
+    "@hitech/ui": "*",
+    "lucide-react": "^0.577.0",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": { "@tailwindcss/postcss": "4.3.3", "tailwindcss": "4.3.3" }
+}
