@@ -1,0 +1,13 @@
+import type { BillingDocument, ProductBatch, Workspace } from './types';
+import { calculate, balance, integer } from './money';
+import { addDays, today } from './dates';
+export const stock = (w: Workspace, productId: string, batchId?: string) => integer(w.movements.filter(m => m.productId === productId && (batchId === undefined || m.batchId === batchId)).reduce((s, m) => s + m.quantityMilli, 0));
+export function availableStock(w: Workspace, productId: string, date = today()) { return w.products.find(p => p.id === productId)?.batchTracking ? integer(w.batches.filter(b => b.productId === productId && b.status === 'active' && (!b.expires || b.expires >= date)).reduce((s, b) => s + stock(w, productId, b.id), 0)) : stock(w, productId); }
+export const totals = (d: BillingDocument) => d.totals || calculate(d.items, d.discountPaise, d.taxPolicy);
+export const paid = (w: Workspace, id: string) => integer(w.payments.filter(p => p.documentId === id && !p.voided).reduce((s, p) => s + p.amountPaise, 0));
+export const credited = (w: Workspace, id: string) => integer(w.documents.filter(d => d.sourceId === id && ['credit-note', 'purchase-return'].includes(d.kind) && d.postedAt && d.status !== 'cancelled').reduce((s, d) => s + totals(d).grandTotal, 0));
+export const outstanding = (w: Workspace, d: BillingDocument) => d.status === 'cancelled' ? 0 : balance(totals(d).grandTotal, paid(w, d.id), credited(w, d.id));
+export function status(w: Workspace, d: BillingDocument, date = today()): string { if (d.status === 'cancelled' || !d.postedAt) return d.status; if (d.kind === 'quotation') return d.status === 'sent' && d.dueDate && d.dueDate < date ? 'expired' : d.status; if (['invoice', 'purchase-bill'].includes(d.kind)) { if (!outstanding(w, d)) return 'paid'; if (d.dueDate && d.dueDate < date) return 'overdue'; if (paid(w, d.id) || credited(w, d.id)) return 'partially-paid'; } return d.status; }
+export function batchStatus(w: Workspace, b: ProductBatch, date = today()) { if (b.status === 'quarantined') return 'quarantined'; if (b.expires && b.expires < date) return 'expired'; if (!stock(w, b.productId, b.id)) return 'empty'; return b.expires && b.expires <= addDays(date, w.settings.nearExpiryDays) ? 'near-expiry' : 'active'; }
+export const posted = (w: Workspace, kind: BillingDocument['kind']) => w.documents.filter(d => d.kind === kind && d.postedAt && d.status !== 'cancelled');
+export const partyBalance = (w: Workspace, id: string) => integer(w.documents.filter(d => d.partyId === id && ['invoice', 'purchase-bill'].includes(d.kind) && d.postedAt && d.status !== 'cancelled').reduce((s, d) => s + outstanding(w, d), 0));

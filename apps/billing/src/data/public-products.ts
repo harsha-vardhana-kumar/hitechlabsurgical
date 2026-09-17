@@ -1,0 +1,389 @@
+// Snapshot of approved catalogue names, categories and explicitly supplied brands.
+// Commercial values are demo-only and are not copied from the public website.
+export const catalogue = [
+  {
+    "id": "HL-001",
+    "name": "Hemometer",
+    "category": "laboratory-equipment",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-002",
+    "name": "K2 Containers",
+    "category": "sample-collection",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-003",
+    "name": "K2 Clotting Containers",
+    "category": "sample-collection",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-004",
+    "name": "Test Tubes",
+    "category": "lab-consumables",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-005",
+    "name": "Pipettes",
+    "category": "laboratory-equipment",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-006",
+    "name": "Fixed Pipettes",
+    "category": "laboratory-equipment",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-007",
+    "name": "Test Tube Stands",
+    "category": "laboratory-accessories",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-008",
+    "name": "Test Tube Holders",
+    "category": "laboratory-accessories",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-009",
+    "name": "Forceps",
+    "category": "surgical-medical",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-010",
+    "name": "Sodium Citrate Containers",
+    "category": "sample-collection",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-011",
+    "name": "Urine Containers",
+    "category": "sample-collection",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-012",
+    "name": "Urine Strips",
+    "category": "urinalysis",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-013",
+    "name": "ESR Tubes",
+    "category": "sample-collection",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-014",
+    "name": "Glucose",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-015",
+    "name": "Creatinine",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-016",
+    "name": "Urea",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-017",
+    "name": "SGOT",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-018",
+    "name": "SGPT",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-019",
+    "name": "Total Protein",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-020",
+    "name": "Albumin",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-021",
+    "name": "ALP",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-022",
+    "name": "Total Cholesterol",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-023",
+    "name": "Triglycerides",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-024",
+    "name": "Bilirubin",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-025",
+    "name": "Amylase",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-026",
+    "name": "Lipase",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-027",
+    "name": "Uric Acid",
+    "category": "clinical-chemistry",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-028",
+    "name": "CRP",
+    "category": "diagnostic-reagents",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-029",
+    "name": "Widal",
+    "category": "diagnostic-reagents",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-030",
+    "name": "RA Factor",
+    "category": "diagnostic-reagents",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-031",
+    "name": "ASO",
+    "category": "diagnostic-reagents",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-032",
+    "name": "Blood Grouping Kits",
+    "category": "hematology",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-033",
+    "name": "MP",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-034",
+    "name": "Dengue",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-035",
+    "name": "HIV",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-036",
+    "name": "HCV",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-037",
+    "name": "HBsAg",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-038",
+    "name": "Troponin T / Trop-T",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-039",
+    "name": "Scrub Typhus",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-040",
+    "name": "UPT",
+    "category": "rapid-test-kits",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-041",
+    "name": "VDRL",
+    "category": "diagnostic-reagents",
+    "subcategory": "",
+    "brand": ""
+  },
+  {
+    "id": "HL-042",
+    "name": "HbA1c",
+    "category": "clinical-chemistry",
+    "subcategory": "Special testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-043",
+    "name": "T3",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-044",
+    "name": "T4",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-045",
+    "name": "TSH",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-046",
+    "name": "PCT",
+    "category": "diagnostic-reagents",
+    "subcategory": "Special testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-047",
+    "name": "Pro BNP",
+    "category": "diagnostic-reagents",
+    "subcategory": "Cardiac testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-048",
+    "name": "FSH",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-049",
+    "name": "LH",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-050",
+    "name": "Prolactin",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-051",
+    "name": "Beta-hCG / B-HCG",
+    "category": "diagnostic-reagents",
+    "subcategory": "Hormone testing",
+    "brand": ""
+  },
+  {
+    "id": "HL-052",
+    "name": "Erba H360 Diluent",
+    "category": "hematology",
+    "subcategory": "Erba H360",
+    "brand": "Erba"
+  },
+  {
+    "id": "HL-053",
+    "name": "Erba H360 Lyse",
+    "category": "hematology",
+    "subcategory": "Erba H360",
+    "brand": "Erba"
+  },
+  {
+    "id": "HL-054",
+    "name": "Erba H360 Cleaner",
+    "category": "hematology",
+    "subcategory": "Erba H360",
+    "brand": "Erba"
+  },
+  {
+    "id": "HL-055",
+    "name": "Erba Wash",
+    "category": "hematology",
+    "subcategory": "",
+    "brand": "Erba"
+  }
+] as const;
