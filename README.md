@@ -126,7 +126,8 @@ The isolated `Brand` component uses the custom H symbol with a laboratory flask
 formed in its negative space, paired with bespoke HITECH lettering. Real vector
 SVG artwork lives under `apps/website/public/brand`; all lettering is outlined,
 so the logo requires no external font. `company.logo.light` / `company.logo.dark`
-select the primary and white versions. The favicon and touch icon use the same mark.
+select the primary and white versions. A small uppercase descriptor supports the
+wordmark. The favicon and touch icon omit the liquid detail for clarity at small sizes.
 See `docs/brand.md` for variants, exact colors and usage guidance.
 
 Three locally stored generated laboratory images are illustrative, not photographs

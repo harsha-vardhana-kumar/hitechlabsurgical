@@ -1,13 +1,18 @@
 # Hitech logo system
 
 The mark combines a geometric **H** with a laboratory flask formed by the open
-negative space in its crossbar. Opposing chamfered corners and the symmetrical
-vessel create a precise, compact silhouette. The flask is part of the H itself.
+negative space in its crossbar. The client's supplied visual reference guided
+this refinement: mirrored stems, matching angled upper terminals and a centered,
+straight-sided vessel. A single shallow liquid curve sits inside the flask.
+There are no bubbles, exterior swooshes, extra symbols or gradients.
 
-The HITECH lettering is drawn as custom geometric paths. Small chamfers on the H
-and E terminals echo the symbol; the rounded C keeps the word approachable.
-The descriptor uses outlined Manrope at weight 550, matching the website's type
-family. No installed or externally loaded font is required to display the SVGs.
+The HITECH lettering retains its custom geometric paths and small terminal
+chamfers, with stems reduced from 10 to 8.5 drawing units for a lighter finish.
+The descriptor is **LAB & SURGICAL SOLUTIONS**, outlined from the website's
+Manrope family at weight 500, with 0.95-unit tracking. Its 13.32-unit cap height
+is about one quarter of HITECH's 54-unit cap height. A roughly 10-unit vertical
+gap separates the lines; 26 units separate the symbol and wordmark. No installed
+or externally loaded font is required to display the SVGs.
 The existing Manrope OFL licence remains under `public/fonts`.
 
 ## Selected direction
@@ -27,7 +32,7 @@ Only the selected direction is included in the application assets.
 | Color | Hex | Use |
 | --- | --- | --- |
 | Deep navy | `#0B2B45` | Lettering, left side of the primary mark, monochrome version, favicon background |
-| Scientific teal | `#087C80` | Right side of the primary mark |
+| Scientific teal | `#087C80` | Right side of the primary mark and the subtle liquid shape |
 | White | `#FFFFFF` | Reversed artwork on dark backgrounds |
 
 These navy and teal values are the existing website colors. Navy/white contrast
@@ -48,12 +53,15 @@ All paths below are relative to `apps/website/public/brand`.
 | `hitech-mark.svg` | Standalone two-color symbol |
 | `hitech-mark-white.svg` | Standalone white symbol |
 | `hitech-mark-dark.svg` | Standalone monochrome navy symbol |
-| `favicon.svg` | White symbol on a navy tile; checked at 16, 24, 32 and 48 pixels |
+| `favicon.svg` | White symbol on a navy tile; liquid omitted for small-size clarity |
 | `apple-touch-icon.png` | 180-pixel touch icon rendered from the vector favicon; not a logo master |
 
 `dark` in the artwork filenames means dark ink. Use the `white` artwork on a
 dark surface. The SVGs contain no raster images, external references or font data.
-The full logo is approximately 12.8 KB; the icon-only mark is under 300 bytes.
+The primary is a flat two-color logo. White and navy monochrome artwork preserves
+the same transparent flask geometry and liquid shape. The favicon removes only
+the liquid detail, keeping the silhouette and flask counter identical. This
+prevents the small gap beneath the liquid from closing at 16 pixels.
 
 ## Placement
 
@@ -68,7 +76,8 @@ Do not recolor the vessel cutout: it is transparent negative space.
 The website's `Brand` component selects the primary/white SVG via central company
 configuration. The enclosing logo slot retains its original dimensions: 195 × 52
 pixels on desktop/tablet and 170 × 48 pixels on mobile. SVG dimensions reserve
-space during loading. Only logo sizing and baseline alignment styles changed.
+space during loading. This refinement keeps the 392 × 96 viewBox and requires
+no component, header sizing, alignment or stylesheet changes.
 
 ## Verification
 
@@ -78,7 +87,9 @@ footer-logo and footer-copy geometry, with no horizontal overflow. The browser's
 native scrollbar occupied 15 pixels inside each frame.
 
 Desktop, tablet and mobile logo placement and the white variant were visually
-reviewed. Mobile menu opening and Escape-to-close remained functional. Source
+reviewed. The color mark, monochrome mark and simplified favicon were also
+reviewed at actual 16, 24, 32 and 48-pixel sizes. Mobile menu opening and
+Escape-to-close remained functional. Source
 comparison confirmed that page layouts, content, product data, routes, form logic,
 page titles/descriptions/canonicals, dependencies and application architecture were
 unchanged. Only favicon and touch-icon references received a cache version so
