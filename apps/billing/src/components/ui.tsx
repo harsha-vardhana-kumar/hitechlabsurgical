@@ -1,0 +1,283 @@
+"use client";
+import Link from "next/link";
+import { useState, type ReactNode } from "react";
+import {
+  Plus,
+  Search,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  PackageOpen,
+} from "lucide-react";
+export function PageHeader({
+  title,
+  eyebrow,
+  description,
+  actions,
+}: {
+  title: string;
+  eyebrow?: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
+  return (
+    <div className="page-header">
+      <div>
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h1>{title}</h1>
+        {description && <p className="muted">{description}</p>}
+      </div>
+      <div className="actions no-print">{actions}</div>
+    </div>
+  );
+}
+export function NewLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link className="button" href={href}>
+      <Plus size={15} />
+      {children}
+    </Link>
+  );
+}
+export function Badge({ children }: { children: ReactNode }) {
+  const label = String(children);
+  return (
+    <span
+      className={`badge ${["paid", "active", "accepted", "received"].includes(label) ? "success" : ["overdue", "expired", "cancelled", "quarantined", "rejected"].includes(label) ? "danger" : ["draft", "archived", "voided", "empty"].includes(label) ? "neutral" : "warning"}`}
+    >
+      {label.replaceAll("-", " ")}
+    </span>
+  );
+}
+export function Panel({
+  title,
+  action,
+  children,
+  className = "",
+}: {
+  title?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`panel ${className}`}>
+      {title && (
+        <div className="panel-head">
+          <h2>{title}</h2>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+export function Empty({
+  title = "No records yet",
+  detail = "Create your first record to get started.",
+  action,
+}: {
+  title?: string;
+  detail?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="empty">
+      <PackageOpen size={30} strokeWidth={1.4} />
+      <h3>{title}</h3>
+      <p>{detail}</p>
+      {action}
+    </div>
+  );
+}
+export function Field({
+  label,
+  children,
+  hint,
+  error,
+}: {
+  label: string;
+  children: ReactNode;
+  hint?: string;
+  error?: string;
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      {children}
+      {hint && <small>{hint}</small>}
+      {error && <small className="error-text">{error}</small>}
+    </label>
+  );
+}
+export function ErrorSummary({ message }: { message: string }) {
+  return message ? (
+    <div className="error-summary" role="alert">
+      {message}
+    </div>
+  ) : null;
+}
+export interface Column<T> {
+  key: string;
+  title: string;
+  render(row: T): ReactNode;
+  value(row: T): string | number;
+  align?: "right";
+  primary?: boolean;
+}
+export function DataTable<T extends { id: string }>({
+  rows,
+  columns,
+  search,
+  toolbar,
+  empty = "No matching records",
+  pageSize = 10,
+}: {
+  rows: T[];
+  columns: Column<T>[];
+  search(row: T): string;
+  toolbar?: ReactNode;
+  empty?: string;
+  pageSize?: number;
+}) {
+  const [query, setQuery] = useState(""),
+    [sort, setSort] = useState(""),
+    [ascending, setAscending] = useState(true),
+    [page, setPage] = useState(1);
+  const filtered = rows.filter((r) =>
+    search(r).toLowerCase().includes(query.toLowerCase()),
+  );
+  const column = columns.find((c) => c.key === sort);
+  if (column)
+    filtered.sort((a, b) => {
+      const x = column.value(a),
+        y = column.value(b);
+      return (
+        (typeof x === "number" && typeof y === "number"
+          ? x - y
+          : String(x).localeCompare(String(y), undefined, { numeric: true })) *
+        (ascending ? 1 : -1)
+      );
+    });
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize)),
+    current = Math.min(page, pages),
+    shown = filtered.slice((current - 1) * pageSize, current * pageSize);
+  return (
+    <div className="data-table">
+      <div className="table-toolbar no-print">
+        <label className="search-input">
+          <Search size={15} />
+          <input
+            aria-label="Search table"
+            placeholder="Search records…"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        {toolbar}
+        <span className="record-count">{filtered.length} records</span>
+      </div>
+      {shown.length ? (
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                {columns.map((c) => (
+                  <th
+                    key={c.key}
+                    className={c.align}
+                    aria-sort={
+                      sort === c.key
+                        ? ascending
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                  >
+                    <button
+                      className="sort-button"
+                      onClick={() => {
+                        setAscending(sort === c.key ? !ascending : true);
+                        setSort(c.key);
+                      }}
+                    >
+                      {c.title}
+                      <ArrowUpDown size={10} />
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((r) => (
+                <tr key={r.id}>
+                  {columns.map((c) => (
+                    <td
+                      key={c.key}
+                      data-label={c.title}
+                      className={`${c.align || ""} ${c.primary ? "primary-cell" : ""}`}
+                    >
+                      {c.render(r)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <Empty title={empty} detail="Try another search or add a new record." />
+      )}
+      <div className="pagination no-print">
+        <span>
+          {filtered.length
+            ? `${(current - 1) * pageSize + 1}–${Math.min(current * pageSize, filtered.length)}`
+            : "0"}{" "}
+          of {filtered.length}
+        </span>
+        <div className="actions">
+          <button
+            className="icon-button"
+            aria-label="Previous page"
+            disabled={current <= 1}
+            onClick={() => setPage(current - 1)}
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <span>
+            Page {current} of {pages}
+          </span>
+          <button
+            className="icon-button"
+            aria-label="Next page"
+            disabled={current >= pages}
+            onClick={() => setPage(current + 1)}
+          >
+            <ChevronRight size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+export function DetailGrid({ entries }: { entries: [string, ReactNode][] }) {
+  return (
+    <dl className="detail-grid">
+      {entries.map(([name, value]) => (
+        <div key={name}>
+          <dt>{name}</dt>
+          <dd>{value || "—"}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}

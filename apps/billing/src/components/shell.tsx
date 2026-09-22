@@ -1,0 +1,336 @@
+"use client";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  LayoutDashboard,
+  FileText,
+  Package,
+  Layers,
+  Users,
+  Truck,
+  ShoppingCart,
+  Wallet,
+  BarChart3,
+  Settings,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Bell,
+  X,
+  ArrowUpRight,
+} from "lucide-react";
+import { useWorkspace } from "./provider";
+import { availableStock, batchStatus, status } from "../domain/selectors";
+import { documentPaths } from "../domain/types";
+const navigation = [
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/sales/invoices", label: "Sales", icon: FileText },
+  { href: "/products", label: "Products", icon: Package },
+  { href: "/inventory", label: "Inventory", icon: Layers },
+  { href: "/customers", label: "Customers", icon: Users },
+  { href: "/suppliers", label: "Suppliers", icon: Truck },
+  { href: "/purchases/orders", label: "Purchases", icon: ShoppingCart },
+  { href: "/expenses", label: "Expenses", icon: Wallet },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
+];
+const children: Record<string, [string, string][]> = {
+  Sales: [
+    ["Quotations", "/sales/quotations"],
+    ["Invoices", "/sales/invoices"],
+    ["Payments received", "/sales/payments"],
+    ["Credit notes", "/sales/credit-notes"],
+  ],
+  Purchases: [
+    ["Purchase orders", "/purchases/orders"],
+    ["Purchase bills", "/purchases/bills"],
+    ["Payments made", "/purchases/payments"],
+    ["Purchase returns", "/purchases/returns"],
+  ],
+  Inventory: [
+    ["Stock overview", "/inventory"],
+    ["Movements", "/inventory/movements"],
+    ["Low stock", "/inventory/low-stock"],
+    ["Batches & expiry", "/inventory/batches"],
+    ["Adjustments", "/inventory/adjustments"],
+  ],
+};
+export function Shell({ children: content }: { children: ReactNode }) {
+  const { w, session } = useWorkspace(),
+    path = usePathname(),
+    [collapsed, setCollapsed] = useState(false),
+    [query, setQuery] = useState("");
+  const drawer = useRef<HTMLDialogElement>(null),
+    search = useRef<HTMLDialogElement>(null);
+  const active = navigation.find(
+    (n) => path.split("/")[1] === n.href.split("/")[1],
+  );
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        search.current?.showModal();
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
+  const low = w.products.filter(
+      (p) => p.active && availableStock(w, p.id) <= p.reorderMilli,
+    ).length,
+    expiring = w.batches.filter((b) =>
+      ["expired", "near-expiry"].includes(batchStatus(w, b)),
+    ).length,
+    overdue = w.documents.filter(
+      (d) => d.kind === "invoice" && status(w, d) === "overdue",
+    ).length;
+  const results = [
+    ...w.products
+      .filter((p) => p.active)
+      .map((p) => ({
+        id: p.id,
+        label: p.name,
+        sub: `Product · ${p.sku}`,
+        href: `/products/${p.id}`,
+      })),
+    ...w.parties
+      .filter((p) => p.active)
+      .map((p) => ({
+        id: p.id,
+        label: p.name,
+        sub: p.kind,
+        href: `/${p.kind === "customer" ? "customers" : "suppliers"}/${p.id}`,
+      })),
+    ...w.documents.map((d) => ({
+      id: d.id,
+      label: d.number,
+      sub: `${d.kind} · ${w.parties.find((p) => p.id === d.partyId)?.name || ""}`,
+      href: `${documentPaths[d.kind]}/${d.id}`,
+    })),
+  ]
+    .filter(
+      (r) =>
+        query.trim() &&
+        `${r.label} ${r.sub}`.toLowerCase().includes(query.toLowerCase()),
+    )
+    .slice(0, 20);
+  function sidebar(mobile = false) {
+    return (
+      <>
+        <Link
+          href="/dashboard"
+          className="brand"
+          onClick={() => drawer.current?.close()}
+        >
+          <Image
+            src={
+              collapsed && !mobile
+                ? "/brand/hitech-mark.svg"
+                : "/brand/hitech-logo.svg"
+            }
+            alt="Hitech Lab & Surgical Solutions"
+            width={collapsed && !mobile ? 36 : 178}
+            height={44}
+            loading="eager"
+          />
+        </Link>
+        {(!collapsed || mobile) && (
+          <div className="workspace-label">
+            <span className="status-dot" />
+            Demo Workspace<small>Business operations</small>
+          </div>
+        )}
+        <nav aria-label={mobile ? "Mobile navigation" : "Main navigation"}>
+          {navigation.map((n) => (
+            <div key={n.href}>
+              <Link
+                title={n.label}
+                href={n.href}
+                className={`nav-link ${active?.label === n.label ? "active" : ""}`}
+                onClick={() => drawer.current?.close()}
+              >
+                <n.icon size={18} />
+                {(!collapsed || mobile) && <span>{n.label}</span>}
+              </Link>
+              {active?.label === n.label &&
+                (!collapsed || mobile) &&
+                children[n.label]?.map(([label, href]) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => drawer.current?.close()}
+                    className={`subnav ${path === href || path.startsWith(href + "/") ? "active" : ""}`}
+                  >
+                    {label}
+                  </Link>
+                ))}
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <Link
+            href="/settings/profile"
+            title="Settings"
+            className={`nav-link ${path.startsWith("/settings") ? "active" : ""}`}
+            onClick={() => drawer.current?.close()}
+          >
+            <Settings size={18} />
+            {(!collapsed || mobile) && "Settings"}
+          </Link>
+          {!mobile && (
+            <button
+              className="collapse-button"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              onClick={() => setCollapsed((v) => !v)}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={17} />
+              ) : (
+                <>
+                  <PanelLeftClose size={17} />
+                  Collapse sidebar
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </>
+    );
+  }
+  return (
+    <div className={`app-shell ${collapsed ? "is-collapsed" : ""}`}>
+      <aside className="sidebar no-print">{sidebar()}</aside>
+      <div className="app-main">
+        <header className="topbar no-print">
+          <div className="topbar-left">
+            <button
+              className="icon-button mobile-menu"
+              aria-label="Open navigation"
+              onClick={() => drawer.current?.showModal()}
+            >
+              <Menu size={20} />
+            </button>
+            <span className="breadcrumb">
+              Workspace <span>/</span>{" "}
+              <strong>{active?.label || "Settings"}</strong>
+            </span>
+          </div>
+          <div className="actions">
+            <button
+              className="global-search"
+              aria-label="Search workspace"
+              onClick={() => search.current?.showModal()}
+            >
+              <Search size={15} />
+              <span>Search anything…</span>
+              <kbd>⌘ K</kbd>
+            </button>
+            <details className="notification">
+              <summary aria-label="Notifications">
+                <Bell size={18} />
+                {!!(low + expiring + overdue) && <i />}
+              </summary>
+              <div className="popover">
+                <h3>Needs attention</h3>
+                <Link href="/inventory/low-stock">
+                  {low} products at reorder level
+                </Link>
+                <Link href="/inventory/batches">
+                  {expiring} batches near or past expiry
+                </Link>
+                <Link href="/sales/invoices">{overdue} overdue invoices</Link>
+              </div>
+            </details>
+            <details className="user-menu">
+              <summary>
+                <span className="avatar">DA</span>
+                <span className="user-label">
+                  {session.name}
+                  <small>{session.role}</small>
+                </span>
+              </summary>
+              <div className="popover">
+                <strong>Demo access</strong>
+                <p>
+                  Local demonstration session. Production sign-in is not
+                  connected.
+                </p>
+                <Link href="/settings/workspace">
+                  Workspace settings <ArrowUpRight size={13} />
+                </Link>
+              </div>
+            </details>
+          </div>
+        </header>
+        <div className="demo-strip no-print">
+          <span>
+            <span className="status-dot" />
+            Demo Workspace
+          </span>
+          <span>Sample values · Saved in this browser only</span>
+          <Link href="/settings/workspace">Manage demo</Link>
+        </div>
+        <main className="main-content">{content}</main>
+        <footer className="app-footer no-print">
+          Hitech Lab & Surgical Solutions <span>Business workspace · Demo</span>
+        </footer>
+      </div>
+      <dialog className="nav-drawer" ref={drawer} aria-label="Navigation">
+        <button
+          className="icon-button drawer-close"
+          aria-label="Close navigation"
+          onClick={() => drawer.current?.close()}
+        >
+          <X size={18} />
+        </button>
+        {sidebar(true)}
+      </dialog>
+      <dialog
+        className="search-dialog"
+        ref={search}
+        aria-label="Search workspace"
+      >
+        <div className="search-dialog-head">
+          <Search size={19} />
+          <input
+            aria-label="Global search"
+            placeholder="Search products, contacts and documents"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button
+            className="icon-button"
+            aria-label="Close search"
+            onClick={() => search.current?.close()}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="search-results">
+          {results.map((r) => (
+            <Link
+              key={r.id}
+              href={r.href}
+              onClick={() => search.current?.close()}
+            >
+              {r.label}
+              <small>{r.sub}</small>
+            </Link>
+          ))}
+          {!results.length && (
+            <p>
+              {query
+                ? "No matching records."
+                : "Start typing a name, item code or document number."}
+            </p>
+          )}
+        </div>
+        <div className="search-hint">
+          Tab to navigate · Enter to open · Esc to close
+        </div>
+      </dialog>
+    </div>
+  );
+}

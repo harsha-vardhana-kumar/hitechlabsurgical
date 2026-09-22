@@ -3,13 +3,15 @@
 Public B2B laboratory and diagnostic supply website for **hitechlabsurgical.com**.
 Built with Next.js App Router, React, TypeScript, Tailwind CSS and npm workspaces.
 The initial catalogue contains all **55 client-supplied products** across 10 categories.
-There is no checkout, payment processing, billing software or admin panel in this release.
+The public website has no checkout, payment processing or admin panel. A separate
+browser-local billing demo is now available in `apps/billing`.
 
 ## Architecture
 
 | Location | Responsibility |
 | --- | --- |
 | `apps/website` | The public Next.js website |
+| `apps/billing` | Separate billing and business operations demo |
 | `packages/ui` | Shared presentation primitives |
 | `packages/config` | Central business details and indexing configuration |
 | `packages/types` | Product, category and enquiry contracts |
@@ -46,7 +48,7 @@ npm run build
 npm start
 ```
 
-`npm run check` runs lint, type checking, tests and the production build together.
+`npm run check` runs lint, type checking, tests and both production builds together.
 See `docs/verification.md` for the completed implementation checks and their scope.
 The development wrapper also supports `npm run dev -- --port 3001` and both
 `--host` and `--hostname`. It works on Windows, macOS and Linux.
@@ -165,9 +167,23 @@ S3 alone cannot serve this standalone output or Next's image optimisation endpoi
 A future static S3 export would require an explicit export/image-loader adaptation.
 No AWS resources have been provisioned.
 
-Future `apps/admin` and `apps/billing` can reuse the shared types, configuration and
-UI. They are intentionally not implemented. Keep authentication, operational data
-and billing logic out of the public website.
+The separate `apps/billing` demo reuses approved branding and keeps its routes,
+operational data and billing logic isolated from the public website. `apps/admin`
+is not implemented. No production authentication or AWS service is connected.
+
+## Billing workspace
+
+Run `npm run dev:billing -- --port 3001` or `npm run build:billing` from the root.
+Deploy billing as a separate Vercel project with Root Directory **`apps/billing`**;
+keep the existing website project's Root Directory at **`apps/website`**.
+
+The demo includes quotations, invoices, payments, purchases, stock/batches,
+customers/suppliers, expenses, reports and branded PDF documents. It uses IndexedDB
+and a fixed Demo Admin identity. Sample commercial values are artificial, records
+stay in this browser, and recording a payment does not transfer money.
+
+See [billing setup](apps/billing/README.md), [architecture](docs/billing-architecture.md),
+[client inputs](docs/billing-client-inputs.md) and [validation](docs/billing-validation.md).
 
 ## Dependency compatibility
 

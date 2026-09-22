@@ -15,9 +15,11 @@
     "build": "npm run build --workspace @hitech/website",
     "start": "npm run start --workspace @hitech/website",
     "lint": "eslint apps packages tests --max-warnings=0",
-    "typecheck": "npm run typecheck --workspace @hitech/website",
+    "typecheck": "npm run typecheck --workspace @hitech/website && npm run typecheck --workspace @hitech/billing",
     "test": "node --import tsx --test tests/*.test.ts",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run build:billing",
+    "dev:billing": "npm run dev --workspace @hitech/billing",
+    "build:billing": "npm run build --workspace @hitech/billing"
   },
   "devDependencies": {
     "@fontsource-variable/manrope": "5.3.0",

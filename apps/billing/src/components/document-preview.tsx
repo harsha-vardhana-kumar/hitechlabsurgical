@@ -1,0 +1,169 @@
+"use client";
+import Image from "next/image";
+import type { BillingDocument, Workspace } from "../domain/types";
+import { status } from "../domain/selectors";
+import { documentLabels } from "../domain/types";
+import { formatDate, money } from "../domain/dates";
+import { documentContent } from "../services/document-content";
+export function DocumentPreview({
+  w,
+  d,
+}: {
+  w: Workspace;
+  d: BillingDocument;
+}) {
+  const c = documentContent(w, d);
+  return (
+    <div className="document-preview-wrap">
+      <article className="document-paper">
+        <div className="document-demo">
+          DEMO DOCUMENT · NOT FOR ACCOUNTING USE
+        </div>
+        <div className="document-top">
+          <div>
+            <Image
+              src={c.business.logo}
+              width={222}
+              height={55}
+              alt={c.business.name}
+              loading="eager"
+            />
+            {c.business.name !== "Hitech Lab & Surgical Solutions" && (
+              <h3>{c.business.name}</h3>
+            )}
+            {c.businessLines.map((text, i) => (
+              <p key={i}>{text}</p>
+            ))}
+          </div>
+          <div className="document-title">
+            <h2>{documentLabels[d.kind]}</h2>
+            <strong>{d.number || "Draft · number assigned on save"}</strong>
+            <p>Date: {formatDate(d.date)}</p>
+            {d.dueDate && (
+              <p>
+                {d.kind === "quotation" ? "Valid until" : "Due date"}:{" "}
+                {formatDate(d.dueDate)}
+              </p>
+            )}
+            <span className="document-status">
+              {status(w, d).replaceAll("-", " ")}
+            </span>
+          </div>
+        </div>
+        <div className="document-parties">
+          <div>
+            <h4>{d.kind.startsWith("purchase") ? "Supplier" : "Bill to"}</h4>
+            <strong>{c.party?.name || "Select a contact"}</strong>
+            <p>{d.billingAddress || c.party?.billingAddress}</p>
+            {c.party?.gstin && <p>GSTIN: {c.party.gstin}</p>}
+            {c.party?.phone && <p>{c.party.phone}</p>}
+          </div>
+          <div>
+            <h4>{d.shippingAddress ? "Ship to" : "Document details"}</h4>
+            {d.shippingAddress && <p>{d.shippingAddress}</p>}
+            {d.placeOfSupply && <p>Place of supply: {d.placeOfSupply}</p>}
+            {d.reference && <p>Reference: {d.reference}</p>}
+            {d.paymentTerms && <p>Payment terms: {d.paymentTerms}</p>}
+            {d.salesperson && <p>Salesperson: {d.salesperson}</p>}
+            {d.deliveryReference && <p>Delivery: {d.deliveryReference}</p>}
+          </div>
+        </div>
+        <table className="document-items">
+          <thead>
+            <tr>
+              {[
+                "#",
+                "Description",
+                "HSN",
+                "Qty",
+                "Rate",
+                "Disc.",
+                "GST",
+                "Amount",
+              ].map((t) => (
+                <th key={t}>{t}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {d.items.map((item, i) => (
+              <tr key={item.id}>
+                <td>{i + 1}</td>
+                <td>
+                  <strong>{item.name}</strong>
+                  {item.description && <small>{item.description}</small>}
+                  {item.batchId && (
+                    <small>
+                      Lot:{" "}
+                      {w.batches.find((b) => b.id === item.batchId)?.lot ||
+                        item.batchId}
+                    </small>
+                  )}
+                </td>
+                <td>{item.hsn || "—"}</td>
+                <td>
+                  {item.quantityMilli / 1000}
+                  <small>{item.unit}</small>
+                </td>
+                <td>{money(item.ratePaise)}</td>
+                <td>{item.discountBps / 100}%</td>
+                <td>{d.taxPolicy.enabled ? `${item.taxBps / 100}%` : "—"}</td>
+                <td>
+                  <strong>{money(c.total.lines[i]?.total || 0)}</strong>
+                  <small>Net {money(c.total.lines[i]?.taxable || 0)}</small>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="document-bottom">
+          <div>
+            {d.notes && (
+              <>
+                <h4>Notes</h4>
+                <p>{d.notes}</p>
+              </>
+            )}
+            {!!c.bank.length && (
+              <>
+                <h4>Payment details</h4>
+                {c.bank.map(([label, value]) => (
+                  <p key={label}>
+                    {label}: {value}
+                  </p>
+                ))}
+              </>
+            )}
+          </div>
+          <dl className="document-totals">
+            {c.summary.map(([label, value]) => (
+              <div
+                className={label === "Grand total" ? "grand-total" : ""}
+                key={label}
+              >
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        {d.terms && (
+          <div className="document-terms">
+            <h4>Terms & conditions</h4>
+            <p>{d.terms}</p>
+          </div>
+        )}
+        <div className="document-signature">
+          <p>For {c.business.name}</p>
+          <div />
+          {c.business.signature || "Authorized signatory"}
+        </div>
+        <div className="document-footer">
+          {c.business.footer && <p>{c.business.footer}</p>}
+          {c.business.website}
+          <span>Demo workspace</span>
+        </div>
+      </article>
+    </div>
+  );
+}

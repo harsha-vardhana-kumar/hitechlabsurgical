@@ -1,0 +1,283 @@
+import type { Workspace } from "../domain/types";
+import {
+  totals,
+  outstanding,
+  stock,
+  availableStock,
+  batchStatus,
+} from "../domain/selectors";
+import { today } from "../domain/dates";
+import { divideRound, integer } from "../domain/money";
+export const reportNames = {
+  sales: "Sales summary",
+  customers: "Sales by customer",
+  products: "Sales by product",
+  tax: "GST summary",
+  receivables: "Receivables",
+  purchases: "Purchase summary",
+  suppliers: "Purchases by supplier",
+  expenses: "Expense summary",
+  stock: "Stock summary",
+  "low-stock": "Low stock",
+  batches: "Batch & expiry report",
+} as const;
+export type ReportKind = keyof typeof reportNames;
+export interface ReportRow {
+  id: string;
+  cells: (string | number)[];
+}
+export interface Report {
+  columns: { title: string; type?: "money" | "number" }[];
+  rows: ReportRow[];
+  note: string;
+}
+export function buildReport(
+  w: Workspace,
+  kind: ReportKind,
+  from = "",
+  to = "",
+): Report {
+  const range = (date: string) =>
+      (!from || date >= from) && (!to || date <= to),
+    posted = w.documents.filter(
+      (d) => d.postedAt && d.status !== "cancelled" && range(d.date),
+    );
+  const sales = posted.filter((d) =>
+      ["invoice", "credit-note"].includes(d.kind),
+    ),
+    purchases = posted.filter((d) =>
+      ["purchase-bill", "purchase-return"].includes(d.kind),
+    ),
+    sign = (kind: string) =>
+      ["credit-note", "purchase-return"].includes(kind) ? -1 : 1;
+  const col = (title: string, type?: "money" | "number") => ({ title, type });
+  if (["sales", "purchases"].includes(kind))
+    return {
+      columns: [
+        col("Date"),
+        col("Document"),
+        col("Contact"),
+        col("Taxable", "money"),
+        col("Tax", "money"),
+        col("Total", "money"),
+      ],
+      rows: (kind === "sales" ? sales : purchases).map((d) => ({
+        id: d.id,
+        cells: [
+          d.date,
+          d.number,
+          d.partySnapshot?.name || "",
+          totals(d).taxable * sign(d.kind),
+          totals(d).tax * sign(d.kind),
+          totals(d).grandTotal * sign(d.kind),
+        ],
+      })),
+      note: "Finalized documents only. Linked credits and returns reduce totals on their own document dates.",
+    };
+  if (["customers", "suppliers", "products"].includes(kind)) {
+    const map = new Map<string, ReportRow>();
+    for (const d of kind === "suppliers" ? purchases : sales) {
+      const n = sign(d.kind),
+        t = totals(d);
+      if (kind === "products")
+        d.items.forEach((item, i) => {
+          const r = map.get(item.productId) || {
+            id: item.productId,
+            cells: [item.name, item.unit, 0, 0, 0],
+          };
+          r.cells[2] = Number(r.cells[2]) + (n * item.quantityMilli) / 1000;
+          r.cells[3] = Number(r.cells[3]) + n * t.lines[i].taxable;
+          r.cells[4] = Number(r.cells[4]) + n * t.lines[i].tax;
+          map.set(item.productId, r);
+        });
+      else {
+        const r = map.get(d.partyId) || {
+          id: d.partyId,
+          cells: [d.partySnapshot?.name || "", 0, 0, 0],
+        };
+        r.cells[1] = Number(r.cells[1]) + n * t.taxable;
+        r.cells[2] = Number(r.cells[2]) + n * t.tax;
+        r.cells[3] = Number(r.cells[3]) + n * t.grandTotal;
+        map.set(d.partyId, r);
+      }
+    }
+    return {
+      columns:
+        kind === "products"
+          ? [
+              col("Product"),
+              col("Unit"),
+              col("Net quantity", "number"),
+              col("Taxable", "money"),
+              col("Tax", "money"),
+            ]
+          : [
+              col(kind === "customers" ? "Customer" : "Supplier"),
+              col("Taxable", "money"),
+              col("Tax", "money"),
+              col("Total", "money"),
+            ],
+      rows: [...map.values()],
+      note: "Net of finalized returns and credit notes within the selected dates. Product values exclude document-level rounding.",
+    };
+  }
+  if (kind === "tax")
+    return {
+      columns: [
+        col("Document"),
+        col("Place of supply"),
+        col("Taxable", "money"),
+        col("CGST", "money"),
+        col("SGST / UTGST", "money"),
+        col("IGST", "money"),
+        col("Total GST", "money"),
+      ],
+      rows: sales.map((d) => {
+        const t = totals(d),
+          n = sign(d.kind);
+        return {
+          id: d.id,
+          cells: [
+            d.number,
+            d.placeOfSupply || "Not configured",
+            n * t.taxable,
+            n * t.cgst,
+            n * t.sgst,
+            n * t.igst,
+            n * t.tax,
+          ],
+        };
+      }),
+      note: "Sales tax working summary, net of credit notes. This is not a GST filing or a statutory return.",
+    };
+  if (kind === "receivables")
+    return {
+      columns: [
+        col("Customer"),
+        col("Invoice"),
+        col("Due date"),
+        col("Current balance", "money"),
+      ],
+      rows: posted
+        .filter((d) => d.kind === "invoice" && outstanding(w, d) > 0)
+        .map((d) => ({
+          id: d.id,
+          cells: [
+            d.partySnapshot?.name || "",
+            d.number,
+            d.dueDate,
+            outstanding(w, d),
+          ],
+        })),
+      note: "Current unpaid balances for invoices dated within this range, including payments made after the range. Choose All dates to include older invoices. Not a historical aging statement.",
+    };
+  if (kind === "expenses")
+    return {
+      columns: [
+        col("Date"),
+        col("Category"),
+        col("Vendor"),
+        col("Before tax", "money"),
+        col("Tax", "money"),
+        col("Total", "money"),
+      ],
+      rows: w.expenses
+        .filter((e) => !e.archived && range(e.date))
+        .map((e) => ({
+          id: e.id,
+          cells: [
+            e.date,
+            e.category,
+            e.vendor,
+            e.amountPaise,
+            e.taxPaise,
+            e.amountPaise + e.taxPaise,
+          ],
+        })),
+      note: "Active recorded expenses within the selected dates.",
+    };
+  const date = to || today(),
+    snapshot = { ...w, movements: w.movements.filter((m) => m.date <= date) };
+  if (kind === "batches")
+    return {
+      columns: [
+        col("Product"),
+        col("Lot"),
+        col("Expiry"),
+        col("On hand", "number"),
+        col("Status"),
+      ],
+      rows: w.batches.map((b) => ({
+        id: b.id,
+        cells: [
+          w.products.find((p) => p.id === b.productId)?.name || "",
+          b.lot,
+          b.expires,
+          stock(snapshot, b.productId, b.id) / 1000,
+          batchStatus(snapshot, b, date),
+        ],
+      })),
+      note: `Stock through ${date}; start date does not remove opening balances. Current batch metadata is used.`,
+    };
+  return {
+    columns: [
+      col("Product"),
+      col("SKU"),
+      col("Unit"),
+      col("On hand", "number"),
+      col("Available", "number"),
+      col("Reorder", "number"),
+      col("Indicative value", "money"),
+    ],
+    rows: w.products
+      .filter(
+        (p) =>
+          p.active &&
+          (kind !== "low-stock" ||
+            availableStock(snapshot, p.id, date) <= p.reorderMilli),
+      )
+      .map((p) => {
+        const qty = stock(snapshot, p.id);
+        return {
+          id: p.id,
+          cells: [
+            p.name,
+            p.sku,
+            p.unit,
+            qty / 1000,
+            availableStock(snapshot, p.id, date) / 1000,
+            p.reorderMilli / 1000,
+            integer(
+              Number(divideRound(BigInt(qty) * BigInt(p.purchasePaise), 1000n)),
+            ),
+          ],
+        };
+      }),
+    note: `Stock through ${date}; start date does not remove opening balances. Available excludes expired and quarantined batches. Indicative value uses current purchase rates, not an accounting valuation.`,
+  };
+}
+export function reportCsv(report: Report) {
+  const escape = (v: string | number) => {
+    const raw = String(v),
+      safe =
+        typeof v === "string" && /^[\s]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
+    return `"${safe.replaceAll('"', '""')}"`;
+  };
+  return (
+    "\uFEFF" +
+    [
+      report.columns.map((c) => escape(c.title)).join(","),
+      ...report.rows.map((r) =>
+        r.cells
+          .map((v, i) =>
+            escape(
+              report.columns[i].type === "money" && typeof v === "number"
+                ? Number((v / 100).toFixed(2))
+                : v,
+            ),
+          )
+          .join(","),
+      ),
+    ].join("\r\n")
+  );
+}

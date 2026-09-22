@@ -1,0 +1,219 @@
+import type {
+  BusinessSettings,
+  DocumentKind,
+  Session,
+  Workspace,
+} from "../domain/types";
+import { addDays, today } from "../domain/dates";
+import { catalogue } from "./public-products";
+import {
+  blankParty,
+  blankProduct,
+  blankDocument,
+  productLine,
+  saveDocument,
+  finalizeDocument,
+  recordPayment,
+} from "../services/commands";
+const kinds: DocumentKind[] = [
+  "quotation",
+  "invoice",
+  "purchase-order",
+  "purchase-bill",
+  "credit-note",
+  "purchase-return",
+];
+export function defaultSettings(): BusinessSettings {
+  const prefixes = ["QT", "INV", "PO", "PB", "CN", "PR"];
+  return {
+    name: "Hitech Lab & Surgical Solutions",
+    legalName: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
+    stateCode: "",
+    pincode: "",
+    country: "",
+    gstin: "",
+    pan: "",
+    website: "hitechlabsurgical.com",
+    logo: "/brand/hitech-logo.svg",
+    gstEnabled: false,
+    defaultTaxBps: 0,
+    inclusive: false,
+    rounding: "paise",
+    stateTaxLabel: "SGST",
+    financialYearStart: 4,
+    nearExpiryDays: 60,
+    numbering: Object.fromEntries(
+      kinds.map((k, i) => [
+        k,
+        {
+          prefix: prefixes[i],
+          next: 1,
+          padding: 6,
+          includeFY: true,
+          resetFY: true,
+          period: "",
+        },
+      ]),
+    ) as BusinessSettings["numbering"],
+    invoiceTerms: "",
+    quotationTerms: "",
+    footer: "",
+    notes: "",
+    signature: "",
+    transportEnabled: false,
+    bankName: "",
+    accountName: "",
+    accountNumber: "",
+    ifsc: "",
+    branch: "",
+    upi: "",
+    paymentMethods: ["Bank transfer", "UPI", "Cash", "Cheque", "Card"],
+    expenseCategories: [
+      "Rent",
+      "Utilities",
+      "Transport",
+      "Office supplies",
+      "Other",
+    ],
+  };
+}
+export function emptyWorkspace(): Workspace {
+  return {
+    version: 1,
+    revision: 0,
+    settings: defaultSettings(),
+    parties: [],
+    products: [],
+    batches: [],
+    documents: [],
+    payments: [],
+    expenses: [],
+    movements: [],
+    audit: [],
+  };
+}
+export function demoWorkspace(): Workspace {
+  const w = emptyWorkspace(),
+    date = today(),
+    session: Session = {
+      id: "demo-seed",
+      name: "Demo setup",
+      role: "Admin",
+      demo: true,
+    };
+  w.parties = [
+    "Demo Central Diagnostics",
+    "Demo Research Institute",
+    "Demo City Clinic",
+    "Demo Scientific Distributors",
+    "Demo Laboratory Supplies",
+  ].map((name, i) => ({
+    ...blankParty(i < 3 ? "customer" : "supplier"),
+    id: `demo-party-${i}`,
+    name,
+    organization: name,
+    type: i < 3 ? "Laboratory" : "Distributor",
+    notes: "Fictional demonstration contact. No real contact details.",
+    createdAt: new Date().toISOString(),
+  }));
+  w.products = catalogue.map((p, i) => ({
+    ...blankProduct(),
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    subcategory: p.subcategory,
+    brand: p.brand,
+    sku: `DEMO-${p.id}`,
+    purchasePaise: 10000 + i * 2500,
+    salePaise: 15000 + i * 3500,
+    reorderMilli: 10000,
+    batchTracking: i >= 13 && i <= 15,
+    expiryTracking: i >= 13 && i <= 15,
+    notes:
+      "DEMO commercial values. Confirm unit, HSN, tax, prices, specifications and opening stock before real use.",
+  }));
+  w.products.forEach((p, i) => {
+    const batchId = p.batchTracking ? `demo-batch-${i}` : "";
+    if (batchId)
+      w.batches.push({
+        id: batchId,
+        productId: p.id,
+        lot: `DEMO-LOT-${i}`,
+        manufactured: addDays(date, -120),
+        expires: addDays(date, i === 13 ? 20 : i === 14 ? -5 : 180),
+        costPaise: p.purchasePaise,
+        salePaise: p.salePaise,
+        status: "active",
+      });
+    w.movements.push({
+      id: `opening-${i}`,
+      productId: p.id,
+      batchId,
+      quantityMilli: (i % 9 === 0 ? 5 : 75) * 1000,
+      type: "opening",
+      date: addDays(date, -90),
+      documentId: "",
+      reason: "Artificial demo opening stock",
+      actor: "Demo setup",
+    });
+  });
+  for (let i = 0; i < 6; i++) {
+    const d = blankDocument(w, "invoice");
+    d.partyId = w.parties[i % 3].id;
+    d.date = addDays(date, -i * 7);
+    d.dueDate = addDays(d.date, i < 3 ? 30 : 7);
+    d.items = [productLine(w.products[i + 1])];
+    d.items[0].quantityMilli = (i + 2) * 1000;
+    d.notes = "Sample invoice — artificial prices, not for accounting use.";
+    const id = saveDocument(w, session, d);
+    finalizeDocument(w, session, id);
+    if (i % 3 !== 2)
+      recordPayment(w, session, {
+        documentId: id,
+        partyId: d.partyId,
+        direction: "received",
+        date,
+        amountPaise: Math.round(
+          w.documents.find((x) => x.id === id)!.totals!.grandTotal /
+            (i % 3 === 0 ? 1 : 2),
+        ),
+        method: "Bank transfer",
+        reference: `DEMO-PAY-${i + 1}`,
+        notes: "Demonstration only",
+      });
+  }
+  for (let i = 0; i < 3; i++) {
+    const d = blankDocument(w, "quotation");
+    d.partyId = w.parties[i].id;
+    d.items = [productLine(w.products[i + 3])];
+    d.items[0].quantityMilli = 10000;
+    const id = saveDocument(w, session, d);
+    if (i) finalizeDocument(w, session, id);
+  }
+  const bill = blankDocument(w, "purchase-bill");
+  bill.partyId = w.parties[3].id;
+  bill.reference = "DEMO-SUPPLIER-001";
+  bill.items = [productLine(w.products[2], true)];
+  bill.items[0].quantityMilli = 20000;
+  const billId = saveDocument(w, session, bill);
+  finalizeDocument(w, session, billId);
+  w.expenses.push({
+    id: "demo-expense-1",
+    date,
+    category: "Transport",
+    vendor: "Demo transport service",
+    amountPaise: 125000,
+    taxPaise: 0,
+    method: "Bank transfer",
+    reference: "DEMO-EXP-001",
+    notes: "Artificial demonstration expense",
+    attachmentName: "",
+    archived: false,
+  });
+  return w;
+}

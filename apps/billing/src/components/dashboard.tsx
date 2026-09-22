@@ -1,0 +1,351 @@
+"use client";
+import Link from "next/link";
+import {
+  ArrowUpRight,
+  ArrowDownLeft,
+  FileText,
+  Wallet,
+  Package,
+  AlertTriangle,
+  Clock,
+  TrendingUp,
+} from "lucide-react";
+import { useWorkspace } from "./provider";
+import { PageHeader, Panel, Badge, Empty } from "./ui";
+import { DocumentTable } from "./documents";
+import {
+  posted,
+  totals,
+  outstanding,
+  availableStock,
+  batchStatus,
+} from "../domain/selectors";
+import { dateRange, today, addDays, money, formatDate } from "../domain/dates";
+import { buildReport } from "../services/reports";
+export function Dashboard() {
+  const { w } = useWorkspace(),
+    date = today(),
+    [month] = dateRange("month", date, w.settings.financialYearStart),
+    invoices = posted(w, "invoice"),
+    credits = posted(w, "credit-note"),
+    low = w.products.filter(
+      (p) => p.active && availableStock(w, p.id) <= p.reorderMilli,
+    ),
+    expiry = w.batches.filter((b) =>
+      ["near-expiry", "expired"].includes(batchStatus(w, b)),
+    ),
+    due = invoices.reduce((n, d) => n + outstanding(w, d), 0),
+    bills = posted(w, "purchase-bill");
+  const sales =
+      invoices
+        .filter((d) => d.date >= month && d.date <= date)
+        .reduce((n, d) => n + totals(d).grandTotal, 0) -
+      credits
+        .filter((d) => d.date >= month && d.date <= date)
+        .reduce((n, d) => n + totals(d).grandTotal, 0),
+    payments = w.payments
+      .filter(
+        (p) =>
+          !p.voided &&
+          p.direction === "received" &&
+          p.date >= month &&
+          p.date <= date,
+      )
+      .reduce((n, p) => n + p.amountPaise, 0),
+    expenses = w.expenses
+      .filter((e) => !e.archived && e.date >= month && e.date <= date)
+      .reduce((n, e) => n + e.amountPaise + e.taxPaise, 0);
+  const stats = [
+    {
+      label: "Net sales this month",
+      value: money(sales),
+      note: "Finalized invoices less credit notes",
+      icon: TrendingUp,
+    },
+    {
+      label: "Payments received",
+      value: money(payments),
+      note: "Recorded this month",
+      icon: ArrowDownLeft,
+    },
+    {
+      label: "Receivables",
+      value: money(due),
+      note: `${invoices.filter((d) => outstanding(w, d) > 0).length} unpaid invoices`,
+      icon: Wallet,
+    },
+    {
+      label: "Payables",
+      value: money(bills.reduce((n, d) => n + outstanding(w, d), 0)),
+      note: "Outstanding purchase bills",
+      icon: ArrowUpRight,
+    },
+    {
+      label: "Expenses this month",
+      value: money(expenses),
+      note: "Including recorded tax",
+      icon: FileText,
+    },
+    {
+      label: "Products in catalogue",
+      value: String(w.products.filter((p) => p.active).length),
+      note: `${low.length} at reorder level`,
+      icon: Package,
+    },
+  ];
+  const points = Array.from({ length: 8 }, (_, i) => {
+    const start = addDays(date, (i - 7) * 7 - 6),
+      end = addDays(date, (i - 7) * 7);
+    return {
+      label: formatDate(end).slice(0, 6),
+      value:
+        invoices
+          .filter((d) => d.date >= start && d.date <= end)
+          .reduce((n, d) => n + totals(d).grandTotal, 0) -
+        credits
+          .filter((d) => d.date >= start && d.date <= end)
+          .reduce((n, d) => n + totals(d).grandTotal, 0),
+    };
+  });
+  const min = Math.min(0, ...points.map((p) => p.value)),
+    max = Math.max(10000, ...points.map((p) => p.value)),
+    y = (v: number) => 165 - ((v - min) / (max - min)) * 140,
+    path = points
+      .map((p, i) => `${i ? "L" : "M"}${48 + i * 69},${y(p.value)}`)
+      .join(" "),
+    pending = w.documents.filter(
+      (d) =>
+        d.kind === "quotation" &&
+        ["draft", "sent", "accepted"].includes(d.status),
+    );
+  const customers = buildReport(w, "customers")
+      .rows.sort((a, b) => Number(b.cells[3]) - Number(a.cells[3]))
+      .slice(0, 4),
+    products = buildReport(w, "products")
+      .rows.sort((a, b) => Number(b.cells[3]) - Number(a.cells[3]))
+      .slice(0, 4);
+  return (
+    <>
+      <PageHeader
+        title="Overview"
+        eyebrow="Your business at a glance"
+        description={formatDate(date)}
+        actions={
+          <>
+            <Link href="/sales/quotations/new" className="button secondary">
+              New quotation
+            </Link>
+            <Link href="/sales/invoices/new" className="button">
+              + New invoice
+            </Link>
+          </>
+        }
+      />
+      <div className="metric-grid">
+        {stats.map((s) => (
+          <Panel key={s.label} className="metric-card">
+            <div>
+              <span>{s.label}</span>
+              <s.icon size={17} />
+            </div>
+            <strong>{s.value}</strong>
+            <small>{s.note}</small>
+          </Panel>
+        ))}
+      </div>
+      <div className="dashboard-grid">
+        <Panel
+          title="Sales trend"
+          action={<span className="muted">Last 8 weeks</span>}
+        >
+          <div className="chart-heading">
+            <strong>{money(points.reduce((n, p) => n + p.value, 0))}</strong>
+            <span>Net invoiced sales</span>
+          </div>
+          <svg
+            className="sales-chart"
+            viewBox="0 0 580 205"
+            role="img"
+            aria-label="Net invoiced sales over the last eight weeks"
+          >
+            {[0, 0.5, 1].map((f) => (
+              <g key={f}>
+                <line
+                  x1="48"
+                  x2="543"
+                  y1={25 + f * 140}
+                  y2={25 + f * 140}
+                  stroke="#e8edef"
+                  strokeDasharray="4 4"
+                />
+                <text x="40" y={29 + f * 140} textAnchor="end">
+                  {((max - f * (max - min)) / 100).toLocaleString("en-IN", {
+                    maximumFractionDigits: 0,
+                  })}
+                </text>
+              </g>
+            ))}
+            <path d={`${path} L531,165 L48,165 Z`} fill="#e3f2f1" />
+            <path
+              d={path}
+              fill="none"
+              stroke="#087C80"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+            />
+            {points.map((p, i) => (
+              <g key={i}>
+                <circle cx={48 + i * 69} cy={y(p.value)} r="3.5" fill="#087C80">
+                  <title>
+                    {p.label}: {money(p.value)}
+                  </title>
+                </circle>
+                <text x={48 + i * 69} y="193" textAnchor="middle">
+                  {p.label}
+                </text>
+              </g>
+            ))}
+          </svg>
+        </Panel>
+        <Panel title="Needs attention">
+          <div className="attention-list">
+            <Link href="/inventory/low-stock">
+              <span className="attention-icon amber">
+                <Package size={17} />
+              </span>
+              <span>
+                <strong>{low.length} products low on stock</strong>
+                <small>At or below reorder level</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </Link>
+            <Link href="/inventory/batches">
+              <span className="attention-icon rose">
+                <AlertTriangle size={17} />
+              </span>
+              <span>
+                <strong>{expiry.length} batches need review</strong>
+                <small>Near expiry or expired</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </Link>
+            <Link href="/sales/quotations">
+              <span className="attention-icon teal">
+                <FileText size={17} />
+              </span>
+              <span>
+                <strong>{pending.length} open quotations</strong>
+                <small>Draft, sent or accepted</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </Link>
+            <Link href="/sales/invoices">
+              <span className="attention-icon amber">
+                <Clock size={17} />
+              </span>
+              <span>
+                <strong>
+                  {
+                    invoices.filter(
+                      (d) =>
+                        d.dueDate && d.dueDate < date && outstanding(w, d) > 0,
+                    ).length
+                  }{" "}
+                  invoices overdue
+                </strong>
+                <small>Follow up on outstanding balances</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </Link>
+          </div>
+        </Panel>
+      </div>
+      <Panel
+        title="Recent invoices"
+        action={<Link href="/sales/invoices">View all →</Link>}
+      >
+        <DocumentTable kind="invoice" recent />
+      </Panel>
+      <div className="dashboard-grid">
+        <Panel
+          title="Recent payments"
+          action={<Link href="/sales/payments">View all →</Link>}
+        >
+          {w.payments.length ? (
+            <div className="recent-list">
+              {w.payments
+                .filter((p) => !p.voided)
+                .toReversed()
+                .slice(0, 5)
+                .map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/${p.direction === "received" ? "sales" : "purchases"}/payments`}
+                  >
+                    <span className="attention-icon teal">
+                      <Wallet size={17} />
+                    </span>
+                    <span>
+                      <strong>
+                        {w.parties.find((c) => c.id === p.partyId)?.name}
+                      </strong>
+                      <small>
+                        {p.method} · {formatDate(p.date)}
+                      </small>
+                    </span>
+                    <strong>{money(p.amountPaise)}</strong>
+                    <Badge>{p.direction}</Badge>
+                  </Link>
+                ))}
+            </div>
+          ) : (
+            <Empty title="No payments recorded" />
+          )}
+        </Panel>
+        <Panel title="Top customers">
+          <div className="rank-list">
+            {customers.length ? (
+              customers.map((r, i) => (
+                <Link key={r.id} href={`/customers/${r.id}`}>
+                  <span>{String(i + 1).padStart(2, "0")}</span>
+                  <strong>{r.cells[0]}</strong>
+                  <b>{money(Number(r.cells[3]))}</b>
+                </Link>
+              ))
+            ) : (
+              <Empty
+                title="No sales yet"
+                detail="Finalize an invoice to see customer totals."
+              />
+            )}
+          </div>
+        </Panel>
+      </div>
+      <Panel
+        title="Top products by net sales"
+        action={<Link href="/reports">Open reports →</Link>}
+      >
+        <div className="top-products">
+          {products.length ? (
+            products.map((r) => (
+              <Link href={`/products/${r.id}`} key={r.id}>
+                <span className="attention-icon teal">
+                  <Package size={18} />
+                </span>
+                <div>
+                  <strong>{r.cells[0]}</strong>
+                  <small>
+                    {r.cells[2]} {r.cells[1]} net sold
+                  </small>
+                  <b>{money(Number(r.cells[3]))}</b>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <Empty title="No product sales yet" />
+          )}
+        </div>
+      </Panel>
+    </>
+  );
+}

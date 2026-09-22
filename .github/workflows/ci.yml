@@ -1,4 +1,4 @@
-name: Website checks
+name: Application checks
 on:
   push:
     branches: [main]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 jobs:
-  website:
+  applications:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
