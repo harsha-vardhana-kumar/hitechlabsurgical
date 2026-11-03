@@ -1,4 +1,5 @@
-import { publicIdentity } from '@hitech/config/public-identity';
+import { confirmedBusiness } from "@hitech/config/business";
+import { publicIdentity } from "@hitech/config/public-identity";
 import type {
   BusinessSettings,
   DocumentKind,
@@ -27,17 +28,17 @@ const kinds: DocumentKind[] = [
 export function defaultSettings(): BusinessSettings {
   const prefixes = ["QT", "INV", "PO", "PB", "CN", "PR"];
   return {
-    name: publicIdentity.legacyDisplayName,
-    legalName: "",
-    phone: "",
+    name: confirmedBusiness.tradeName,
+    legalName: confirmedBusiness.legalName,
+    phone: confirmedBusiness.phone1,
     email: "",
     address: "",
     city: "",
-    state: "",
-    stateCode: "",
+    state: confirmedBusiness.state,
+    stateCode: confirmedBusiness.stateCode,
     pincode: "",
     country: "",
-    gstin: "",
+    gstin: confirmedBusiness.gstin,
     pan: "",
     website: publicIdentity.domain,
     logo: "/brand/hitech-logo.svg",

@@ -122,14 +122,9 @@ test("business defaults contain confirmed identity and no invented contacts or P
   validateBusiness({ ...confirmedBusiness });
   assert.equal(confirmedBusiness.gstin, "37DBHPM6856H1Z4");
   assert.equal(confirmedBusiness.tradeName, "HITECH LIFE SCIENCE & SURGICALS");
-  for (const k of [
-    "pan",
-    "email",
-    "pincode",
-    "phone1",
-    "phone2",
-    "addressLine1",
-  ] as const)
+  assert.equal(confirmedBusiness.phone1, "8143274589");
+  assert.equal(confirmedBusiness.phone2, "8019031114");
+  for (const k of ["pan", "email", "pincode", "addressLine1"] as const)
     assert.equal(confirmedBusiness[k], "");
 });
 test("business validation checks GST state, phone, email, PAN and pincode", () => {
@@ -439,6 +434,45 @@ test("category reordering remains draft until published", () => {
   });
   assert.equal(w.categories[0].published!.sortOrder, 8);
 });
+test("manual category positions, arrow moves and publication never produce tied positions", () => {
+  const w = demoWorkspace();
+  const item = w.categories.at(-1)!;
+  const other = w.categories[0];
+  const originalName = other.published!.name;
+  execute(w, admin, {
+    type: "category.save",
+    category: { ...other, name: "Unreleased rename" },
+    expectedRevision: other.revision,
+  });
+  execute(w, admin, {
+    type: "category.save",
+    category: { ...item, sortOrder: 0 },
+    expectedRevision: item.revision,
+  });
+  const saved = w.categories.find((c) => c.id === item.id)!;
+  execute(w, admin, {
+    type: "category.move",
+    id: saved.id,
+    direction: 1,
+    expectedRevision: saved.revision,
+  });
+  execute(w, admin, {
+    type: "category.publish",
+    id: saved.id,
+    expectedRevision: saved.revision,
+  });
+  const release = publishedSite(w).categories;
+  assert.equal(
+    new Set(w.categories.map((c) => c.sortOrder)).size,
+    w.categories.length,
+  );
+  assert.deepEqual(
+    release.map((c) => c.sortOrder),
+    release.map((_, index) => index),
+  );
+  assert.equal(release[1].id, item.id);
+  assert.equal(release.find((c) => c.id === other.id)!.name, originalName);
+});
 test("enquiry transition validation permits follow-up and controlled reopening", () => {
   validateTransition("New", "Contacted");
   validateTransition("Contacted", "In Progress");
@@ -470,14 +504,14 @@ test("settings edits are centralized but public snapshot changes only on publish
     type: "settings.save",
     settings: {
       ...w.settings,
-      business: { ...w.settings.business, phone1: "8143274589" },
+      business: { ...w.settings.business, phone1: "9000001234" },
     },
     expectedRevision: 1,
   });
-  assert.equal(w.settings.business.phone1, "8143274589");
-  assert.equal(w.settings.published!.business.phone1, "");
+  assert.equal(w.settings.business.phone1, "9000001234");
+  assert.equal(w.settings.published!.business.phone1, confirmedBusiness.phone1);
   execute(w, admin, { type: "settings.publish", expectedRevision: 2 });
-  assert.equal(publishedSite(w).settings!.business.phone1, "8143274589");
+  assert.equal(publishedSite(w).settings!.business.phone1, "9000001234");
 });
 test("featured homepage publication blocks unpublished products", () => {
   const w = demoWorkspace();

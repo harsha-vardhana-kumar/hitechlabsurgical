@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { demoWorkspaceEnabled } from "@hitech/config/workspace-mode";
 import type { Session } from "@hitech/types/admin";
 import { AwsApiAdapter } from "../apps/admin/src/repositories/aws-api";
 import { handleAdminCommand } from "../apps/admin/src/services/server-boundary";
@@ -114,4 +115,12 @@ test("server boundary never exposes raw exceptions or JWT details", async () => 
   assert.equal(result.status, 400);
   assert.ok(!JSON.stringify(result).includes("stack"));
   assert.ok(!JSON.stringify(result).includes("sensitive-token"));
+});
+
+test("production or unknown stages disable both demo workspaces even with demo mode selected", () => {
+  for (const stage of ["production", "live", "typo"])
+    assert.equal(demoWorkspaceEnabled(stage, "demo"), false);
+  assert.equal(demoWorkspaceEnabled("preview", "api"), false);
+  assert.equal(demoWorkspaceEnabled("preview", "demo"), true);
+  assert.equal(demoWorkspaceEnabled(), true);
 });

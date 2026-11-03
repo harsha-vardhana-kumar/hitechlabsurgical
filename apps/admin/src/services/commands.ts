@@ -5,6 +5,7 @@ import type {
   Activity,
   EnquiryStatus,
   AdminProduct,
+  AdminCategory,
   Permission,
 } from "@hitech/types/admin";
 import {
@@ -49,6 +50,32 @@ function current<T extends { id: string }>(items: T[], id: string) {
   const found = items.find((i) => i.id === id);
   invariant(found, "This record no longer exists.");
   return found;
+}
+/** Insert at a zero-based position. Stable IDs resolve ties in older demo records. */
+function orderedAt<T extends { id: string; sortOrder: number }>(
+  rows: T[],
+  moving: T,
+  position: number,
+): T[] {
+  const ordered = rows
+    .filter((row) => row.id !== moving.id)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+  ordered.splice(Math.min(position, ordered.length), 0, moving);
+  return ordered;
+}
+function setDraftCategoryOrder(
+  rows: AdminCategory[],
+  moving: AdminCategory,
+  position: number,
+  now: string,
+  saved = false,
+) {
+  orderedAt(rows, moving, position).forEach((item, index) => {
+    if (item.sortOrder === index) return;
+    item.sortOrder = index;
+    if (!saved || item.id !== moving.id) item.revision++;
+    item.updatedAt = now;
+  });
 }
 function version(actual: number, expected: number) {
   invariant(
@@ -319,6 +346,7 @@ export function execute(
         "Reassign published products before disabling their category.",
       );
       put(w.categories, v);
+      setDraftCategoryOrder(w.categories, v, v.sortOrder, now, true);
       id = v.id;
       entity = "Category";
       break;
@@ -331,22 +359,14 @@ export function execute(
         "Choose a valid move direction.",
       );
       const order = [...w.categories].sort(
-        (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+        (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
       );
-      const from = order.findIndex((x) => x.id === c.id),
-        to = from + c.direction;
+      const to = order.findIndex((item) => item.id === c.id) + c.direction;
       invariant(
         to >= 0 && to < order.length,
         "This category is already at the end of the list.",
       );
-      [order[from], order[to]] = [order[to], order[from]];
-      order.forEach((item, index) => {
-        if (item.sortOrder !== index) {
-          item.sortOrder = index;
-          item.revision++;
-          item.updatedAt = now;
-        }
-      });
+      setDraftCategoryOrder(w.categories, category, to, now);
       id = c.id;
       entity = "Category";
       break;
@@ -377,6 +397,21 @@ export function execute(
       image(w, v.seo.ogImageId, true);
       publishMedia(w, [v.imageId, v.seo.ogImageId]);
       v.published = categoryFields(v);
+      const released = w.categories.flatMap((item) =>
+        item.published
+          ? [
+              {
+                id: item.id,
+                sortOrder: item.published.sortOrder,
+                snapshot: item.published,
+              },
+            ]
+          : [],
+      );
+      const moving = current(released, v.id);
+      orderedAt(released, moving, v.sortOrder).forEach((item, position) => {
+        item.snapshot.sortOrder = position;
+      });
       v.publishedRevision = v.revision;
       id = v.id;
       entity = "Category";

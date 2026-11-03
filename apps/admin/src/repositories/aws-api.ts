@@ -14,7 +14,7 @@ export class AwsApiAdapter
   constructor(
     private readonly baseUrl: string,
     private readonly accessToken: () => Promise<string>,
-    private readonly http: typeof fetch = fetch,
+    private readonly http: typeof fetch,
   ) {
     super();
     invariant(safeUrl(baseUrl), "The API URL must use HTTPS.");

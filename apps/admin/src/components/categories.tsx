@@ -37,6 +37,9 @@ export default function Categories({ id }: { id?: string }) {
 function CategoryList() {
   const { workspace: w, run, notify, busy } = useWorkspace();
   const [error, setError] = useState("");
+  const ordered = [...w.categories].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+  );
   const move = async (c: AdminCategory, direction: -1 | 1) => {
     try {
       await run({
@@ -112,14 +115,7 @@ function CategoryList() {
                 <div className="actions">
                   <button
                     aria-label={`Move ${c.name} up`}
-                    disabled={
-                      busy ||
-                      [...w.categories].sort(
-                        (a, b) =>
-                          a.sortOrder - b.sortOrder ||
-                          a.name.localeCompare(b.name),
-                      )[0]?.id === c.id
-                    }
+                    disabled={busy || ordered[0]?.id === c.id}
                     className="icon-button"
                     onClick={() => void move(c, -1)}
                   >
@@ -128,14 +124,7 @@ function CategoryList() {
                   <span>{c.sortOrder}</span>
                   <button
                     aria-label={`Move ${c.name} down`}
-                    disabled={
-                      busy ||
-                      [...w.categories].sort(
-                        (a, b) =>
-                          b.sortOrder - a.sortOrder ||
-                          b.name.localeCompare(a.name),
-                      )[0]?.id === c.id
-                    }
+                    disabled={busy || ordered.at(-1)?.id === c.id}
                     className="icon-button"
                     onClick={() => void move(c, 1)}
                   >

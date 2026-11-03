@@ -167,7 +167,10 @@ test("FEFO excludes expired and quarantined batches and consumes nearest expiry"
     near = batch(w, "NEAR", 10),
     later = batch(w, "LATER", 100);
   assert.equal(
-    batchStatus(w, w.batches.find((b) => b.id === near)!),
+    batchStatus(
+      w,
+      w.batches.find((b) => b.id === near)!,
+    ),
     "near-expiry",
   );
   assert.equal(availableStock(w, w.products[0].id), 20000);
@@ -351,9 +354,22 @@ test("demo seed is explicit, complete and keeps unknown legal fields blank", () 
   const w = demoWorkspace();
   assert.equal(w.products.length, 55);
   for (const p of w.products) assert.ok(stock(w, p.id) >= 0);
-  assert.equal(w.settings.gstin, "");
+  assert.equal(w.settings.gstin, "37DBHPM6856H1Z4");
+  assert.equal(w.settings.legalName, "MOSAM VENKATA LAKSHMI");
+  assert.equal(w.settings.name, "HITECH LIFE SCIENCE & SURGICALS");
+  assert.equal(w.settings.state, "Andhra Pradesh");
+  assert.equal(w.settings.phone, "8143274589");
+  for (const field of [
+    "email",
+    "pan",
+    "pincode",
+    "invoiceTerms",
+    "quotationTerms",
+    "bankName",
+  ] as const)
+    assert.equal(w.settings[field], "");
   assert.equal(w.settings.address, "");
-  assert.equal(w.settings.stateCode, "");
+  assert.equal(w.settings.stateCode, "37");
   assert.equal(w.settings.accountNumber, "");
   assert.ok(w.parties.every((p) => p.name.startsWith("Demo")));
   assert.throws(() =>

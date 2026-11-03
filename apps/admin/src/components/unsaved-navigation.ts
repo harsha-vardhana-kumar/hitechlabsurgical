@@ -18,7 +18,9 @@ export function useUnsavedNavigation(
     const origin = location.href,
       originState = history.state;
     const navigation = (
-      window as Window & { navigation?: { currentEntry?: { index: number } } }
+      window as Window & {
+        navigation?: EventTarget & { currentEntry?: { index: number } };
+      }
     ).navigation;
     const originIndex = navigation?.currentEntry?.index;
     let replay = false,
@@ -67,6 +69,33 @@ export function useUnsavedNavigation(
         }
       });
     };
+    // Cancel before Next.js can unmount the editor during a same-document traversal.
+    const navigate = (event: Event) => {
+      const e = event as Event & {
+        navigationType: string;
+        destination: { index: number; sameDocument: boolean; url: string };
+      };
+      if (
+        e.navigationType !== "traverse" ||
+        !e.cancelable ||
+        !e.destination.sameDocument ||
+        replay ||
+        restoring ||
+        e.destination.url === origin ||
+        typeof originIndex !== "number"
+      )
+        return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const steps = e.destination.index - originIndex;
+      void ask().then((ok) => {
+        if (ok) {
+          replay = true;
+          clear();
+          history.go(steps);
+        }
+      });
+    };
     const pop = (e: PopStateEvent) => {
       if (replay) return;
       if (restoring) {
@@ -105,10 +134,12 @@ export function useUnsavedNavigation(
         }
       });
     };
+    navigation?.addEventListener("navigate", navigate, true);
     window.addEventListener("beforeunload", before);
     window.addEventListener("popstate", pop, true);
     document.addEventListener("click", click, true);
     return () => {
+      navigation?.removeEventListener("navigate", navigate, true);
       window.removeEventListener("beforeunload", before);
       window.removeEventListener("popstate", pop, true);
       document.removeEventListener("click", click, true);

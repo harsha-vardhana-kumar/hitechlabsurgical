@@ -1,3 +1,4 @@
+import { demoWorkspaceEnabled } from "@hitech/config/workspace-mode";
 import type { Metadata } from "next";
 import { Provider } from "../components/provider";
 import { Shell } from "../components/shell";
@@ -10,9 +11,10 @@ export const metadata: Metadata = {
   icons: { icon: "/brand/favicon.svg" },
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const enabled =
-    !process.env.NEXT_PUBLIC_ADMIN_MODE ||
-    process.env.NEXT_PUBLIC_ADMIN_MODE === "demo";
+  const enabled = demoWorkspaceEnabled(
+    process.env.HITECH_WORKSPACE_STAGE,
+    process.env.NEXT_PUBLIC_ADMIN_MODE,
+  );
   return (
     <html lang="en">
       <body>

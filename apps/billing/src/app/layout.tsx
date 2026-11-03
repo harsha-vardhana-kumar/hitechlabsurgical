@@ -1,3 +1,4 @@
+import { demoWorkspaceEnabled } from "@hitech/config/workspace-mode";
 import type { Metadata } from "next";
 import { WorkspaceProvider } from "../components/provider";
 import { Shell } from "../components/shell";
@@ -14,12 +15,26 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const enabled = demoWorkspaceEnabled(
+    process.env.HITECH_WORKSPACE_STAGE,
+    process.env.NEXT_PUBLIC_BILLING_MODE,
+  );
   return (
     <html lang="en">
       <body>
-        <WorkspaceProvider>
-          <Shell>{children}</Shell>
-        </WorkspaceProvider>
+        {enabled ? (
+          <WorkspaceProvider>
+            <Shell>{children}</Shell>
+          </WorkspaceProvider>
+        ) : (
+          <main className="startup">
+            <h1>Production setup required</h1>
+            <p>
+              Connect a verified identity provider and billing service to open a
+              production workspace.
+            </p>
+          </main>
+        )}
       </body>
     </html>
   );
