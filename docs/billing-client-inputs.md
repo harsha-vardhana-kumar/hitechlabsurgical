@@ -1,12 +1,12 @@
 # Billing client inputs
 
-The app includes the approved Hitech name, domain and logo. All commercial sample
+New demo workspaces receive the confirmed legal/trade names, GSTIN, state, state code and primary phone from the shared business configuration. See the [approved identity and outstanding inputs](client-inputs.md). All commercial sample
 values are demonstrations. The following information is needed before preparing
 real business documents or implementing the production service.
 
 | Area | Confirmed inputs needed |
 | --- | --- |
-| Business identity | Legal entity name, registered/billing address, city, state/UT and code, pincode, phone, email, GSTIN and PAN where applicable |
+| Business identity | Full GST certificate, registered/billing address, city, district, pincode, official email, WhatsApp and PAN where applicable |
 | Tax/accounting | GST registration/treatment, HSN/SAC and rates, inclusive/exclusive pricing, SGST/UTGST treatment, rounding and financial-year start |
 | Numbering | Prefix, padding, next unused number and year/reset policy for quotations, invoices, purchase orders, bills, credit notes and purchase returns |
 | Product masters | Units, pack sizes, SKU/barcode, verified manufacturer/brand/model, catalogue number, purchase/sale rates, reorder level and active status |

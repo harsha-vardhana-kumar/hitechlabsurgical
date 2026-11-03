@@ -2,7 +2,7 @@
 
 `apps/billing` is an independent Next.js App Router application in the existing npm
 workspace. Its routes, data, styling and dependencies are separate from
-`apps/website`. No public website files are changed. Shared package names and the
+`apps/website`. The public catalogue and website routes are independently maintained. Shared package names and the
 approved branding are reused; billing operations do not enter the public catalogue
 service or enquiry flow.
 

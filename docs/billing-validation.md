@@ -1,5 +1,19 @@
 # Billing validation
 
+## November pre-AWS regression
+
+The current release runs 39 billing tests, comprising 19 money and precision cases and 20 workflow cases. The earlier 44-test repository baseline included six website tests. The website suite remains part of the monorepo gate.
+
+The Chromium suite creates a fictional customer, supplier and item with eight opening units. It sends a four-unit quotation, converts it to a ₹400 invoice, posts the sale and verifies four units remaining and a low-stock row. It records ₹150 and ₹250, verifies the partial and paid states and zero balance, then receives ten units against a purchase order and verifies 14 units and removal from the low-stock list. It checks near-expiry and expired lot records through the batch filter.
+
+Both the quotation and invoice buttons trigger an automatic browser download. The tests open each downloaded PDF with the existing PDF library and verify its filename, document title and page count. The Print buttons dispatch Chromium’s native print event. Tests then render the print stylesheet into PDFs and verify that the document is visible and actions are hidden. Physical printer output remains a device-specific check.
+
+The browser also tests cancel and discard on an unsaved form, the native reload prompt, persistence after saving, and 13 primary billing modules. Financial tests exercise GST splits, discounts, rounding, balances and exact decimal round trips at the supported safe integer boundary.
+
+[Reproduce the release](production-readiness.md) · [Browser scenarios](../qa/billing/operations.spec.ts)
+
+## September baseline
+
 Review date: 22 September 2026. Scope: the isolated billing demo and regression
 checks for the unchanged public website. This record distinguishes automated
 checks, observed browser behavior and remaining environment limitations.
@@ -83,7 +97,9 @@ Manrope fonts. Text extraction verified item/terms content and the ₹ glyph; bo
 checks found no text outside page edges. The invoice correctly showed Paid and a
 zero outstanding balance. Long rows/terms continued across pages without clipping.
 
-## Remaining manual checks
+## Follow-up items recorded in September
+
+The November Chromium run above closes the automatic download and native prompt items for the target browser.
 
 - **Automatic browser download was not confirmed in this cloud browser.** PDF
   generation completed and exposed the Save prepared PDF link, but the automation

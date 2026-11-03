@@ -1,25 +1,25 @@
-# Hitech Lab & Surgical Solutions
+# HITECH LIFE SCIENCE & SURGICALS
 
-Public B2B laboratory and diagnostic supply website for **hitechlabsurgical.com**.
-Built with Next.js App Router, React, TypeScript, Tailwind CSS and npm workspaces.
-The initial catalogue contains all **55 client-supplied products** across 10 categories.
-The public website has no checkout, payment processing or admin panel. A separate
-browser-local billing demo is now available in `apps/billing`.
+Public website, billing workspace and website administration for **hitechlabsurgical.com**. Each application builds and deploys independently from this npm workspace. The public catalogue contains 55 client-supplied products across 10 categories.
 
 ## Architecture
 
 | Location | Responsibility |
 | --- | --- |
 | `apps/website` | The public Next.js website |
-| `apps/billing` | Separate billing and business operations demo |
+| `apps/billing` | Billing, purchasing, inventory, accounts and printable documents |
+| `apps/admin` | Website catalogue, content, publishing, SEO, enquiries and settings |
+| `packages/brand` | Approved logo files and brand tokens |
+| `packages/validation` | Content, publishing, identity and file validation |
+| `packages/utils` | Slugs, identifiers, dates and safe CSV export |
 | `packages/ui` | Shared presentation primitives |
 | `packages/config` | Central business details and indexing configuration |
 | `packages/types` | Product, category and enquiry contracts |
 | `docs` | Catalogue review notes, imagery provenance and handover |
-| `tests` | Catalogue integrity and enquiry validation tests |
+| `tests` and `qa` | Website, financial and Admin logic tests and production Chromium workflows |
 | `scripts` | Portable development and standalone production entrypoints |
 
-`src/services/catalog.ts` is the data access boundary. Product data lives in
+In `apps/website`, `src/services/catalog.ts` is the public catalogue boundary. Product data lives in
 `src/data/products.ts`, and categories in `src/data/categories.ts`; page components
 do not own catalogue records. A future API can replace the repository behind the
 service layer. Shared packages are transpiled by Next.js, with no separate build step.
@@ -48,8 +48,8 @@ npm run build
 npm start
 ```
 
-`npm run check` runs lint, type checking, tests and both production builds together.
-See `docs/verification.md` for the completed implementation checks and their scope.
+`npm run check` runs lint, TypeScript, all unit/adapter tests and three production builds. After the builds, run `npx playwright install chromium` and `npm run test:browser` to execute the release workflows against the standalone servers. Linux CI installs Chromium system dependencies as well.
+See [the release checklist](docs/production-readiness.md) for the current results and [the initial website verification](docs/verification.md) for the historical baseline.
 The development wrapper also supports `npm run dev -- --port 3001` and both
 `--host` and `--hostname`. It works on Windows, macOS and Linux.
 `npm start` copies local images, fonts and static chunks into the standalone output
@@ -97,7 +97,9 @@ Vercel preview deployments remain `noindex` even if indexing is enabled for prod
 Blank contact values render no fake contact details. The canonical origin is centrally
 defined as `https://hitechlabsurgical.com` in `packages/config/src/index.ts`.
 
-## Vercel deployment
+## Vercel previews
+
+Create one Next.js project per app with Root Directories **apps/website**, **apps/billing** and **apps/admin**. All three use the shared root lockfile. The settings below show the website project. Use the corresponding root for the other two projects.
 
 Import **harsha-vardhana-kumar/hitechlabsurgical** into Vercel and set:
 
@@ -167,9 +169,7 @@ S3 alone cannot serve this standalone output or Next's image optimisation endpoi
 A future static S3 export would require an explicit export/image-loader adaptation.
 No AWS resources have been provisioned.
 
-The separate `apps/billing` demo reuses approved branding and keeps its routes,
-operational data and billing logic isolated from the public website. `apps/admin`
-is not implemented. No production authentication or AWS service is connected.
+The Admin and billing demos use distinct browser databases. Admin exposes only published catalogue and public settings through an allowlisted projection. See the [architecture](docs/architecture.md) and [future AWS integration plan](docs/aws-readiness.md) for ownership and service boundaries.
 
 ## Billing workspace
 
@@ -184,6 +184,12 @@ stay in this browser, and recording a payment does not transfer money.
 
 See [billing setup](apps/billing/README.md), [architecture](docs/billing-architecture.md),
 [client inputs](docs/billing-client-inputs.md) and [validation](docs/billing-validation.md).
+
+## Admin workspace
+
+Run `npm run dev:admin -- --port 3002` or `npm run build:admin` from the root. The dashboard opens in a labelled Demo Admin session. Create a draft, preview it, then use Publishing status to inspect its public snapshot. GitHub CI runs the three production builds and the Chromium regression suite on pull requests and pushes to main.
+
+[Admin setup](apps/admin/README.md) · [Admin architecture and permissions](docs/admin-architecture.md) · [Admin validation](docs/admin-validation.md) · [Release checklist](docs/production-readiness.md) · [Client inputs](docs/client-inputs.md)
 
 ## Dependency compatibility
 
