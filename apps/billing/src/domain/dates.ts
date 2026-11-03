@@ -1,4 +1,5 @@
 import { environment } from "../config/environment";
+import { inputMoney } from "./money";
 export const today = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: environment.timeZone,
@@ -27,12 +28,12 @@ export const formatDate = (v: string) =>
         timeZone: "UTC",
       }).format(new Date(`${v.slice(0, 10)}T12:00:00Z`))
     : "—";
-export const money = (paise: number) =>
-  new Intl.NumberFormat(environment.locale, {
+const rupeeFormat = new Intl.NumberFormat(environment.locale, {
     style: "currency",
     currency: environment.currency,
     maximumFractionDigits: 2,
-  }).format(paise / 100);
+  });
+export const money = (paise: number) => rupeeFormat.format(inputMoney(paise) as `${number}`);
 export function financialYear(date: string, startMonth: number) {
   if (
     !validDate(date) ||

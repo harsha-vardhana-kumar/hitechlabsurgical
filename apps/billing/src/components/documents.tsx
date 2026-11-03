@@ -6,7 +6,7 @@ import { Download, Printer, Plus, Trash2 } from "lucide-react";
 import type { BillingDocument, DocumentKind, LineItem } from "../domain/types";
 import { documentLabels, documentPaths } from "../domain/types";
 import { money, formatDate, addDays } from "../domain/dates";
-import { parseFixed } from "../domain/money";
+import { parseFixed, inputMoney, inputPercent, inputQuantity } from "../domain/money";
 import { totals, status, outstanding } from "../domain/selectors";
 import {
   blankDocument,
@@ -219,10 +219,10 @@ type EditorLine = LineItem & {
 };
 const editorLine = (i: LineItem): EditorLine => ({
   ...i,
-  qty: String(i.quantityMilli / 1000),
-  rate: String(i.ratePaise / 100),
-  discount: String(i.discountBps / 100),
-  tax: String(i.taxBps / 100),
+  qty: inputQuantity(i.quantityMilli),
+  rate: inputMoney(i.ratePaise),
+  discount: inputPercent(i.discountBps),
+  tax: inputPercent(i.taxBps),
 });
 function parseLine(input: EditorLine): LineItem {
   const { qty, rate, discount, tax, ...line } = input;
@@ -239,7 +239,7 @@ function DocumentEditor({ initial }: { initial: BillingDocument }) {
     router = useRouter(),
     [d, setD] = useState(initial),
     [lines, setLines] = useState(initial.items.map(editorLine)),
-    [discount, setDiscount] = useState(String(initial.discountPaise / 100)),
+    [discount, setDiscount] = useState(inputMoney(initial.discountPaise)),
     [error, setError] = useState(""),
     [dirty, setDirty] = useState(false),
     [preview, setPreview] = useState(false);

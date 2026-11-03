@@ -1,1 +1,14 @@
-{"name":"@hitech/config","version":"1.0.0","private":true,"exports":"./src/index.ts"}
+{
+  "name": "@hitech/config",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./business": "./src/business.ts",
+    "./public-identity": "./src/public-identity.ts",
+    "./workspace-mode": "./src/workspace-mode.ts"
+  },
+  "dependencies": {
+    "@hitech/types": "*"
+  }
+}

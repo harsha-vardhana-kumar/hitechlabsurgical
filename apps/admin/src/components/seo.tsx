@@ -1,0 +1,194 @@
+"use client";
+import { useState } from "react";
+import type { Seo as SeoType } from "@hitech/types/admin";
+import { useWorkspace } from "./provider";
+import {
+  PageHeader,
+  Panel,
+  DataTable,
+  Status,
+  Modal,
+  ErrorSummary,
+} from "./ui";
+import { SeoFields } from "./seo-fields";
+import { Access } from "./access";
+type Row = {
+  id: string;
+  name: string;
+  path: string;
+  seo: SeoType;
+  revision: number;
+};
+export default function Seo({ kind }: { kind: "product" | "page" }) {
+  return (
+    <Access permission="seo.manage">
+      <SeoManager kind={kind} key={kind} />
+    </Access>
+  );
+}
+function SeoManager({ kind }: { kind: "product" | "page" }) {
+  const { workspace: w } = useWorkspace();
+  const [filter, setFilter] = useState("all");
+  const [editing, setEditing] = useState<Row>();
+  const rows: Row[] =
+    kind === "product"
+      ? w.products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          path: `/products/${p.slug}`,
+          seo: p.seo,
+          revision: p.revision,
+        }))
+      : w.pages.map((p) => ({
+          id: p.id,
+          name: p.title,
+          path: p.path,
+          seo: p.seo,
+          revision: p.revision,
+        }));
+  return (
+    <>
+      <PageHeader
+        title={kind === "product" ? "Product SEO" : "Page metadata"}
+        description="Make each page easy to understand in search results and social previews."
+      />
+      <Panel>
+        <DataTable
+          rows={rows.filter(
+            (r) => filter === "all" || !r.seo.title || !r.seo.description,
+          )}
+          search={(r) =>
+            `${r.name} ${r.path} ${r.seo.title} ${r.seo.description}`
+          }
+          toolbar={
+            <select
+              aria-label="SEO completeness filter"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="all">All metadata</option>
+              <option value="missing">Missing metadata</option>
+            </select>
+          }
+          columns={[
+            {
+              key: "name",
+              title: kind === "product" ? "Product" : "Page",
+              primary: true,
+              value: (r) => r.name,
+              render: (r) => (
+                <div className="record-name">
+                  <strong>{r.name}</strong>
+                  <small>{r.path}</small>
+                </div>
+              ),
+            },
+            {
+              key: "title",
+              title: "Meta title",
+              value: (r) => r.seo.title || "Not set",
+            },
+            {
+              key: "description",
+              title: "Description",
+              value: (r) => r.seo.description.length,
+              render: (r) => (
+                <span className={r.seo.description ? "" : "review-label"}>
+                  {r.seo.description
+                    ? `${r.seo.description.length} characters`
+                    : "Missing description"}
+                </span>
+              ),
+            },
+            {
+              key: "robots",
+              title: "Indexing",
+              value: (r) => (r.seo.index ? "Index" : "No index"),
+              render: (r) => (
+                <Status value={r.seo.index ? "Index" : "No index"} />
+              ),
+            },
+            {
+              key: "edit",
+              title: "Actions",
+              value: (r) => r.id,
+              render: (r) => (
+                <button className="text-link" onClick={() => setEditing(r)}>
+                  Edit metadata →
+                </button>
+              ),
+            },
+          ]}
+        />
+      </Panel>
+      <p className="page-note">
+        Title guidance: 30–60 characters. Description guidance: 120–160
+        characters. These are editorial suggestions, not a reason to stuff
+        keywords.
+      </p>
+      {editing && (
+        <SeoEditor
+          kind={kind}
+          initial={editing}
+          onClose={() => setEditing(undefined)}
+        />
+      )}
+    </>
+  );
+}
+function SeoEditor({
+  initial,
+  kind,
+  onClose,
+}: {
+  initial: Row;
+  kind: "product" | "page";
+  onClose: () => void;
+}) {
+  const { run, notify, confirm, busy } = useWorkspace();
+  const [seo, setSeo] = useState(initial.seo);
+  const [error, setError] = useState("");
+  const close = async () => {
+    if (
+      JSON.stringify(seo) !== JSON.stringify(initial.seo) &&
+      !(await confirm({
+        title: "Discard metadata edits?",
+        message: "Your unsaved SEO changes will be discarded.",
+        label: "Discard changes",
+      }))
+    )
+      return;
+    onClose();
+  };
+  const save = async () => {
+    try {
+      await run({
+        type: "seo.save",
+        entity: kind,
+        id: initial.id,
+        seo,
+        expectedRevision: initial.revision,
+      });
+      notify(
+        "SEO draft saved. Publish the page or product to update the demo snapshot.",
+      );
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed.");
+    }
+  };
+  return (
+    <Modal title={`SEO · ${initial.name}`} onClose={() => void close()} wide>
+      <ErrorSummary message={error} />
+      <SeoFields value={seo} onChange={setSeo} />
+      <div className="dialog-actions">
+        <button className="button secondary" onClick={() => void close()}>
+          Cancel
+        </button>
+        <button className="button" disabled={busy} onClick={() => void save()}>
+          Save SEO draft
+        </button>
+      </div>
+    </Modal>
+  );
+}

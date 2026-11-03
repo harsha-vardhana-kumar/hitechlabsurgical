@@ -1,1 +1,10 @@
-{"name":"@hitech/types","version":"1.0.0","private":true,"exports":"./src/index.ts"}
+{
+  "name": "@hitech/types",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/admin.ts",
+    "./business": "./src/business.ts"
+  }
+}

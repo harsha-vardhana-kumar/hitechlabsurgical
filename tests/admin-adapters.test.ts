@@ -1,0 +1,126 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { demoWorkspaceEnabled } from "@hitech/config/workspace-mode";
+import type { Session } from "@hitech/types/admin";
+import { AwsApiAdapter } from "../apps/admin/src/repositories/aws-api";
+import { handleAdminCommand } from "../apps/admin/src/services/server-boundary";
+import { demoWorkspace } from "../apps/admin/src/data/demo";
+import { blankProduct } from "../apps/admin/src/domain/factories";
+const session: Session = {
+  id: "verified-user",
+  name: "Verified viewer",
+  role: "Viewer",
+  demo: false,
+};
+test("API adapter sends bearer identity without trusting the browser session role", async () => {
+  let body = "",
+    authorization = "";
+  const http = (async (url: unknown, options: RequestInit) => {
+    if (String(url).endsWith("/workspace"))
+      return Response.json({ ...demoWorkspace(), environment: "production" });
+    body = options.body as string;
+    authorization = (options.headers as Record<string, string>).Authorization;
+    return new Response(JSON.stringify({ id: "ok" }), { status: 200 });
+  }) as typeof fetch;
+  const r = new AwsApiAdapter(
+    "https://api.example.test",
+    async () => "verified-token",
+    http,
+  );
+  await r.dispatch(
+    { type: "product.action", id: "p", action: "publish", expectedRevision: 1 },
+    { ...session, role: "Owner" },
+  );
+  assert.equal(authorization, "Bearer verified-token");
+  assert.ok(!body.includes("Owner"));
+  assert.ok(!body.includes("verified-token"));
+});
+test("API adapter refuses demo data at a production endpoint", async () => {
+  const r = new AwsApiAdapter(
+    "https://api.example.test",
+    async () => "token",
+    (async () =>
+      new Response(JSON.stringify(demoWorkspace()), {
+        status: 200,
+      })) as typeof fetch,
+  );
+  await assert.rejects(() => r.load(), /Demo data cannot/);
+});
+test("API adapter reports conflicts and authorization without exposing upstream response bodies", async () => {
+  const r = new AwsApiAdapter(
+    "https://api.example.test",
+    async () => "token",
+    (async () =>
+      new Response("secret backend stack trace", {
+        status: 403,
+      })) as typeof fetch,
+  );
+  await assert.rejects(() => r.load(), /^Error: Permission denied/);
+});
+test("server boundary rejects demo identity before accessing production storage", async () => {
+  let called = false;
+  const result = await handleAdminCommand(
+    { token: "x", body: "{}" },
+    {
+      identity: { verifyAccessToken: async () => ({ ...session, demo: true }) },
+      store: {
+        transaction: async () => {
+          called = true;
+          throw new Error("not expected");
+        },
+      },
+    },
+  );
+  assert.equal(result.status, 403);
+  assert.equal(called, false);
+});
+test("server boundary applies verified server role and centralized validation", async () => {
+  const w = { ...demoWorkspace(), environment: "production" as const };
+  const result = await handleAdminCommand(
+    {
+      token: "x",
+      body: JSON.stringify({
+        role: "Owner",
+        command: {
+          type: "product.save",
+          product: blankProduct(),
+          expectedRevision: 0,
+        },
+      }),
+    },
+    {
+      identity: { verifyAccessToken: async () => session },
+      store: { transaction: async (fn) => fn(w) },
+    },
+  );
+  assert.equal(result.status, 403);
+  assert.equal(w.activity.length, 0);
+});
+test("server boundary never exposes raw exceptions or JWT details", async () => {
+  const result = await handleAdminCommand(
+    { token: "sensitive-token", body: "{}" },
+    {
+      identity: {
+        verifyAccessToken: async () => {
+          throw new Error("private verifier stack trace");
+        },
+      },
+      store: {
+        transaction: async () => {
+          throw new Error("unreachable");
+        },
+      },
+    },
+  );
+  assert.equal(result.status, 400);
+  assert.ok(!JSON.stringify(result).includes("stack"));
+  assert.ok(!JSON.stringify(result).includes("sensitive-token"));
+});
+
+test("production or unknown stages disable both demo workspaces even with demo mode selected", () => {
+  for (const stage of ["production", "live", "typo"])
+    assert.equal(demoWorkspaceEnabled(stage, "demo"), false);
+  assert.equal(demoWorkspaceEnabled("preview", "api"), false);
+  assert.equal(demoWorkspaceEnabled("preview", "demo"), true);
+  assert.equal(demoWorkspaceEnabled(), true);
+});

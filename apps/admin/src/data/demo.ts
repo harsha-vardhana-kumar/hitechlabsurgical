@@ -1,0 +1,250 @@
+import type {
+  AdminWorkspace,
+  AdminUser,
+  ContentPage,
+  MediaAsset,
+} from "@hitech/types/admin";
+import { confirmedBusiness } from "@hitech/config/business";
+import { blankProduct, blankSeo, blankEnquiry } from "../domain/factories";
+import { categoryFields } from "../domain/projections";
+import baseline from "./catalogue-baseline.json";
+import dimensions from "./bundled-media.json";
+export function demoWorkspace(): AdminWorkspace {
+  const now = new Date().toISOString();
+  const media: MediaAsset[] = [
+    [
+      "laboratory",
+      "laboratory.webp",
+      "Illustrative laboratory equipment scene",
+    ],
+    ["consumables", "consumables.webp", "Illustrative laboratory consumables"],
+    ["reagents", "reagents.webp", "Illustrative laboratory reagents"],
+  ].map(([id, fileName, alt]) => ({
+    id: `media-${id}`,
+    fileName,
+    alt,
+    caption: "Illustrative category artwork. Not an exact product photograph.",
+    type: "image",
+    mime: "image/webp",
+    ...dimensions[fileName as keyof typeof dimensions],
+    storageKey: `bundled/${fileName}`,
+    source: "bundled",
+    url: `/images/${fileName}`,
+    uploadedAt: now,
+  }));
+  media.push(
+    ...(["hitech-logo", "hitech-mark", "favicon"] as const).map((name) => ({
+      id: `brand-${name}`,
+      fileName: `${name}.svg`,
+      alt:
+        name === "hitech-logo"
+          ? "Approved Hitech logo"
+          : "Approved Hitech H and flask mark",
+      caption:
+        "Approved vector artwork. Legacy descriptor retained; business trade name is managed separately.",
+      type: "logo" as const,
+      mime: "image/svg+xml",
+      ...dimensions[`${name}.svg`],
+      storageKey: `bundled/${name}.svg`,
+      source: "bundled" as const,
+      url: `/brand/${name}.svg`,
+      uploadedAt: now,
+    })),
+  );
+  media.forEach((m) => {
+    m.published = {
+      url: m.url,
+      alt: m.alt,
+      caption: m.caption,
+      width: m.width,
+      height: m.height,
+    };
+  });
+  const categories = baseline.categories.map((c, i) => {
+    const value = {
+      id: c.id,
+      name: c.name,
+      slug: c.id,
+      description: c.description,
+      imageId: `media-${c.image.split("/").pop()!.replace(".webp", "")}`,
+      sortOrder: i,
+      active: true,
+      seo: { ...blankSeo(), title: c.name, description: c.description },
+      revision: 1,
+      updatedAt: now,
+      publishedRevision: 1,
+    };
+    return { ...value, published: categoryFields(value) };
+  });
+  const products = baseline.products.map((p, i) => ({
+    ...blankProduct(),
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    categoryId: p.category,
+    subcategory: p.subcategory || "",
+    shortDescription: p.shortDescription,
+    description: p.description,
+    brand: p.brand || "",
+    packSize: "",
+    specifications: p.specifications,
+    needsReview: p.needsReview,
+    reviewNotes: p.reviewNotes || "",
+    keywords: p.searchTerms,
+    featured: p.featured,
+    sortOrder: i,
+    revision: 1,
+    updatedAt: now,
+    internalNotes:
+      "Imported from approved public catalogue as a demo draft. No commercial billing data imported.",
+  }));
+  const users: AdminUser[] = [
+    {
+      id: "demo-owner",
+      name: "Demo Owner",
+      email: "",
+      role: "Owner",
+      active: true,
+      demo: true,
+    },
+    {
+      id: "demo-admin",
+      name: "Demo Admin",
+      email: "",
+      role: "Admin",
+      active: true,
+      demo: true,
+    },
+    {
+      id: "demo-editor",
+      name: "Demo Content Manager",
+      email: "",
+      role: "Content Manager",
+      active: true,
+      demo: true,
+    },
+    {
+      id: "demo-sales",
+      name: "Demo Sales",
+      email: "",
+      role: "Sales",
+      active: true,
+      demo: true,
+    },
+    {
+      id: "demo-viewer",
+      name: "Demo Viewer",
+      email: "",
+      role: "Viewer",
+      active: true,
+      demo: true,
+    },
+  ];
+  const pageSeeds = [
+    [
+      "home",
+      "Homepage",
+      "/",
+      "Reliable supplies. For the science that matters.",
+      "From everyday lab essentials to specialised diagnostic products. Supporting the people who move healthcare and research forward.",
+    ],
+    [
+      "about",
+      "About Us",
+      "/about",
+      "Good science needs a dependable supply partner.",
+      "We focus on the details of procurement, so you can focus on the work in front of you.",
+    ],
+    [
+      "industries",
+      "Industries",
+      "/industries",
+      "Different disciplines. Shared standards.",
+      "Supporting procurement across healthcare, science and education.",
+    ],
+    [
+      "contact",
+      "Contact",
+      "/contact",
+      "Let’s find what your facility needs.",
+      "Share your product requirements with our team.",
+    ],
+    [
+      "footer",
+      "Footer",
+      "footer",
+      confirmedBusiness.tradeName,
+      "Laboratory equipment, diagnostic products, consumables and scientific supplies.",
+    ],
+  ];
+  const pages: ContentPage[] = pageSeeds.map(
+    ([id, title, path, heading, description]) => ({
+      id,
+      title,
+      path,
+      heading,
+      description,
+      body: "",
+      ctaLabel: id === "home" ? "Explore Products" : "",
+      ctaLink: id === "home" ? "/products" : "",
+      procurementHeading: "Let’s find what your facility needs.",
+      procurementDescription:
+        "Share your requirements for a tailored quotation.",
+      featuredCategoryIds: [],
+      seo: { ...blankSeo(), title: `${title} | Hitech`, description },
+      revision: 1,
+      updatedAt: now,
+    }),
+  );
+  const enquiries = [
+    "Demo Central Laboratory",
+    "Demo Research Institute",
+    "Demo City Clinic",
+    "Demo Procurement Team",
+  ].map((name, i) => ({
+    ...blankEnquiry(i === 2 ? "contact" : "quote"),
+    id: `sample-enquiry-${i + 1}`,
+    name: `Sample contact ${i + 1}`,
+    organisation: name,
+    email: `contact${i + 1}@example.com`,
+    productId: i === 2 ? "" : "HL-004",
+    productName: i === 2 ? "" : "Test Tubes",
+    quantity: i === 2 ? "" : "Please discuss",
+    message:
+      i === 2
+        ? "This is a fictional contact enquiry for workspace testing."
+        : "Fictional quotation request. Please confirm available product specifications and pack sizes.",
+    submittedAt: new Date(Date.now() - i * 86400000).toISOString(),
+    status: i === 1 ? ("In Progress" as const) : ("New" as const),
+    revision: 1,
+  }));
+  return {
+    schemaVersion: 1,
+    environment: "demo",
+    revision: 0,
+    products,
+    categories,
+    media,
+    enquiries,
+    pages,
+    users,
+    activity: [],
+    publishing: [],
+    settings: {
+      business: { ...confirmedBusiness },
+      site: {
+        siteName: confirmedBusiness.tradeName,
+        websiteUrl: confirmedBusiness.website,
+        defaultSeo: blankSeo(),
+        homepageFeaturedIds: [],
+        showFeatured: true,
+        analyticsEnabled: false,
+        analyticsMeasurementId: "",
+        logoId: "brand-hitech-logo",
+        faviconId: "brand-favicon",
+        publicContacts: true,
+      },
+      revision: 1,
+    },
+  };
+}

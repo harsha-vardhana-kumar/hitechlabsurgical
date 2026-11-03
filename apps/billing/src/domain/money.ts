@@ -18,9 +18,15 @@ export function parseFixed(input: string, places = 2): number {
     ),
   );
 }
-export const inputMoney = (value: number) => (value / 100).toFixed(2);
-export const inputQuantity = (value: number) => (value / 1000).toString();
-export const inputPercent = (value: number) => (value / 100).toString();
+function decimalString(value: number, places: number, trim = false): string {
+  const digits = Math.abs(integer(value)).toString().padStart(places + 1, "0");
+  const suffix = digits.slice(-places);
+  const fraction = trim ? suffix.replace(/0+$/, "") : suffix;
+  return (value < 0 ? "-" : "") + digits.slice(0, -places) + (fraction ? "." + fraction : "");
+}
+export const inputMoney = (value: number) => decimalString(value, 2);
+export const inputQuantity = (value: number) => decimalString(value, 3, true);
+export const inputPercent = (value: number) => decimalString(value, 2, true);
 export function divideRound(n: bigint, d: bigint): bigint {
   if (d <= 0n || n < 0n) throw new Error("Invalid decimal calculation.");
   return (n + d / 2n) / d;

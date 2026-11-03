@@ -1,0 +1,849 @@
+"use client";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import {
+  Plus,
+  Eye,
+  CloudUpload,
+  Copy,
+  Archive,
+  ArrowLeft,
+  Save,
+  CheckCircle2,
+  ImageIcon,
+  Trash2,
+} from "lucide-react";
+import type { AdminProduct } from "@hitech/types/admin";
+import { slugify } from "@hitech/utils";
+import { useWorkspace, useDraft } from "./provider";
+import {
+  PageHeader,
+  Panel,
+  Status,
+  DataTable,
+  Field,
+  ErrorSummary,
+  Modal,
+  Empty,
+} from "./ui";
+import { blankProduct } from "../domain/factories";
+import { MediaImage } from "./media-image";
+import { SeoFields } from "./seo-fields";
+import { Access } from "./access";
+export default function Products({ id }: { id?: string }) {
+  return (
+    <Access permission="products.manage">
+      {id ? <ProductEditor key={id} id={id} /> : <ProductList />}
+    </Access>
+  );
+}
+function ProductList() {
+  const { workspace: w, allowed, run, confirm, notify } = useWorkspace();
+  const params = useSearchParams();
+  const [filter, setFilter] = useState(params.get("filter") || "all");
+  const [category, setCategory] = useState("");
+  const [selection, setSelection] = useState<string[]>([]);
+  const [error, setError] = useState("");
+  const rows = w.products.filter(
+    (p) =>
+      (!category || p.categoryId === category) &&
+      (filter === "all" ||
+        (filter === "images" && !p.imageId) ||
+        (filter === "seo" && !p.seo.description) ||
+        (filter === "review" && p.needsReview) ||
+        p.status === filter),
+  );
+  const bulkArchive = async () => {
+    if (
+      !(await confirm({
+        title: `Archive ${selection.length} products?`,
+        message:
+          "These products will be removed from the demo published catalogue. Enquiry history remains available.",
+        label: "Archive selected",
+      }))
+    )
+      return;
+    let done = 0;
+    try {
+      for (const id of selection) {
+        const p = w.products.find((p) => p.id === id);
+        if (p) {
+          await run({
+            type: "product.action",
+            id,
+            action: "archive",
+            expectedRevision: p.revision,
+            confirmed: true,
+          });
+          done++;
+        }
+      }
+      setSelection([]);
+      notify(`${done} products archived.`);
+    } catch (e) {
+      setError(
+        `${done} archived. ${e instanceof Error ? e.message : "Please retry."}`,
+      );
+    }
+  };
+  return (
+    <>
+      <PageHeader
+        title="Products"
+        description="Your public catalogue. Descriptions, images and visibility, kept separate from billing."
+        actions={
+          <Link className="button" href="/products/new">
+            <Plus size={17} />
+            Add product
+          </Link>
+        }
+      />
+      <div className="tabs">
+        {["all", "Draft", "Review", "Published", "Archived"].map((v) => (
+          <button
+            key={v}
+            className={filter === v ? "active" : ""}
+            onClick={() => setFilter(v)}
+          >
+            {v === "all" ? "All products" : v}
+            <span>
+              {v === "all"
+                ? w.products.length
+                : w.products.filter((p) => p.status === v).length}
+            </span>
+          </button>
+        ))}
+      </div>
+      <ErrorSummary message={error} />
+      {selection.length > 0 && (
+        <div className="selection-bar">
+          <strong>{selection.length} selected</strong>
+          {allowed("products.publish") && (
+            <button
+              className="button small secondary"
+              onClick={() => void bulkArchive()}
+            >
+              <Archive size={14} />
+              Archive selected
+            </button>
+          )}
+          <button className="text-link" onClick={() => setSelection([])}>
+            Clear selection
+          </button>
+        </div>
+      )}
+      <Panel>
+        <DataTable
+          rows={rows}
+          search={(p) =>
+            `${p.name} ${p.slug} ${p.sku} ${p.brand} ${p.keywords.join(" ")}`
+          }
+          selection={selection}
+          onSelection={setSelection}
+          toolbar={
+            <>
+              <select
+                aria-label="Category filter"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">All categories</option>
+                {w.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Readiness filter"
+                value={
+                  ["images", "seo", "review"].includes(filter) ? filter : ""
+                }
+                onChange={(e) => setFilter(e.target.value || "all")}
+              >
+                <option value="">All readiness</option>
+                <option value="images">Missing image</option>
+                <option value="seo">Missing SEO description</option>
+                <option value="review">Needs verification</option>
+              </select>
+            </>
+          }
+          columns={[
+            {
+              key: "name",
+              title: "Product",
+              primary: true,
+              value: (p) => p.name,
+              render: (p) => (
+                <Link className="product-cell" href={`/products/${p.id}`}>
+                  <span className="product-thumb">
+                    <MediaImage id={p.imageId} />
+                  </span>
+                  <div>
+                    <strong>{p.name}</strong>
+                    <small>{p.sku || p.id}</small>
+                  </div>
+                </Link>
+              ),
+            },
+            {
+              key: "category",
+              title: "Category",
+              value: (p) =>
+                w.categories.find((c) => c.id === p.categoryId)?.name ||
+                "Uncategorized",
+            },
+            {
+              key: "status",
+              title: "Status",
+              value: (p) => p.status,
+              render: (p) => (
+                <div className="badge-stack">
+                  <Status value={p.status} />
+                  {p.published && p.revision !== p.publishedRevision && (
+                    <small>Published version retained</small>
+                  )}
+                </div>
+              ),
+            },
+            {
+              key: "readiness",
+              title: "Readiness",
+              value: (p) =>
+                p.needsReview
+                  ? "Needs review"
+                  : p.imageId
+                    ? "Image added"
+                    : "Image needed",
+              render: (p) =>
+                p.needsReview ? (
+                  <span className="review-label">Needs verification</span>
+                ) : p.imageId ? (
+                  <span className="muted inline">
+                    <CheckCircle2 size={14} />
+                    Image added
+                  </span>
+                ) : (
+                  <span className="muted inline">
+                    <ImageIcon size={14} />
+                    Image needed
+                  </span>
+                ),
+            },
+            { key: "order", title: "Order", value: (p) => p.sortOrder },
+            {
+              key: "edit",
+              title: "Actions",
+              value: (p) => p.id,
+              render: (p) => (
+                <Link className="text-link" href={`/products/${p.id}`}>
+                  Edit details →
+                </Link>
+              ),
+            },
+          ]}
+          emptyAction={
+            <Link href="/products/new" className="button small">
+              Create product
+            </Link>
+          }
+        />
+      </Panel>
+      <p className="page-note">
+        Catalogue names come from the existing website. No prices, stock
+        balances, supplier costs or invoices are exposed here.
+      </p>
+    </>
+  );
+}
+function ProductEditor({ id }: { id: string }) {
+  const { workspace: w } = useWorkspace();
+  const [fresh] = useState(blankProduct);
+  const initial = id === "new" ? fresh : w.products.find((p) => p.id === id);
+  return initial ? (
+    <ProductForm key={initial.id} initial={initial} id={id} />
+  ) : (
+    <Empty title="Product not found">
+      <Link href="/products">Return to products</Link>
+    </Empty>
+  );
+}
+function ProductForm({ initial, id }: { initial: AdminProduct; id: string }) {
+  const { workspace: w, run, allowed, confirm, notify, busy } = useWorkspace();
+  const { value: p, setValue, dirty, clean } = useDraft(initial);
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState(false);
+  const router = useRouter();
+  const saved = w.products.find((x) => x.id === p.id);
+  const set = <K extends keyof AdminProduct>(key: K, v: AdminProduct[K]) =>
+    setValue({ ...p, [key]: v });
+  const save = async () => {
+    setError("");
+    try {
+      const savedId = await run({
+        type: "product.save",
+        product: p,
+        expectedRevision: p.revision,
+      });
+      clean({ ...p, status: "Draft", revision: p.revision + 1 });
+      notify("Product draft saved. Published content is unchanged.");
+      if (id === "new") router.replace(`/products/${savedId}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save this product.");
+    }
+  };
+  const action = async (
+    kind: "publish" | "unpublish" | "archive" | "duplicate" | "review",
+  ) => {
+    setError("");
+    if (dirty) {
+      setError("Save your draft before running this action.");
+      return;
+    }
+    if (!saved) {
+      setError("Save this product first.");
+      return;
+    }
+    if (
+      ["unpublish", "archive"].includes(kind) &&
+      !(await confirm({
+        title:
+          kind === "archive"
+            ? "Archive this product?"
+            : "Unpublish this product?",
+        message:
+          "The product will be removed from the demo published catalogue. Historical enquiry references are retained.",
+        label: kind === "archive" ? "Archive product" : "Unpublish product",
+      }))
+    )
+      return;
+    try {
+      const nextId = await run({
+        type: "product.action",
+        id: p.id,
+        action: kind,
+        expectedRevision: p.revision,
+        confirmed: true,
+      });
+      notify(
+        kind === "publish"
+          ? "Published to the demo snapshot. Live website unchanged."
+          : `Product ${kind === "duplicate" ? "duplicated" : kind === "review" ? "sent for review" : kind === "archive" ? "archived" : "unpublished"}.`,
+      );
+      if (kind === "duplicate") router.push(`/products/${nextId}`);
+      else if (kind === "archive") router.push("/products");
+      else
+        clean({
+          ...p,
+          revision: saved.revision + (kind === "unpublish" ? 1 : 0),
+          status:
+            kind === "publish"
+              ? "Published"
+              : kind === "review"
+                ? "Review"
+                : "Draft",
+        });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Action failed.");
+    }
+  };
+  return (
+    <>
+      <Link className="back-link" href="/products">
+        <ArrowLeft size={15} />
+        All products
+      </Link>
+      <PageHeader
+        title={id === "new" ? "Add a product" : p.name}
+        description="Prepare the public details, then preview and publish when ready."
+        actions={
+          <>
+            <button
+              className="button secondary"
+              onClick={() => setPreview(true)}
+            >
+              <Eye size={16} />
+              Preview
+            </button>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => void save()}
+            >
+              <Save size={16} />
+              Save draft
+            </button>
+            {allowed("products.publish") && (
+              <button
+                className="button"
+                disabled={busy || dirty || !saved}
+                onClick={() => void action("publish")}
+              >
+                <CloudUpload size={16} />
+                Publish
+              </button>
+            )}
+          </>
+        }
+      />
+      <ErrorSummary message={error} />
+      <div className="editor-status">
+        <Status value={saved?.status || "Draft"} />
+        {dirty && <span className="unsaved-dot">Unsaved changes</span>}
+        {saved?.published && (
+          <span className="inline">
+            <CheckCircle2 size={14} />A published snapshot is retained
+          </span>
+        )}
+        <span>Demo publishing only</span>
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        <div className="editor-grid">
+          <div className="editor-main">
+            <Panel title="Product information">
+              <div className="form-grid">
+                <Field label="Product name *" wide>
+                  <input
+                    value={p.name}
+                    maxLength={150}
+                    onChange={(e) =>
+                      setValue({
+                        ...p,
+                        name: e.target.value,
+                        ...(!saved && (!p.slug || p.slug === slugify(p.name))
+                          ? { slug: slugify(e.target.value) }
+                          : {}),
+                      })
+                    }
+                    required
+                  />
+                </Field>
+                <Field
+                  label="Slug *"
+                  hint="Stable, unique URL name. Lowercase letters, numbers and hyphens."
+                  wide
+                >
+                  <div className="input-prefix">
+                    <span>/products/</span>
+                    <input
+                      value={p.slug}
+                      maxLength={80}
+                      onChange={(e) => set("slug", e.target.value)}
+                      required
+                    />
+                  </div>
+                </Field>
+                <Field label="Category">
+                  <select
+                    value={p.categoryId}
+                    onChange={(e) => set("categoryId", e.target.value)}
+                  >
+                    <option value="">Select category</option>
+                    {w.categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                        {!c.active ? " (inactive)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Subcategory">
+                  <input
+                    value={p.subcategory}
+                    onChange={(e) => set("subcategory", e.target.value)}
+                  />
+                </Field>
+                <Field
+                  label="Short description"
+                  hint={`${p.shortDescription.length}/400 characters`}
+                  wide
+                >
+                  <textarea
+                    value={p.shortDescription}
+                    maxLength={400}
+                    onChange={(e) => set("shortDescription", e.target.value)}
+                  />
+                </Field>
+                <Field
+                  label="Full description"
+                  hint="Plain text only. Confirm all medical and technical claims."
+                  wide
+                >
+                  <textarea
+                    className="long-text"
+                    value={p.description}
+                    maxLength={12000}
+                    onChange={(e) => set("description", e.target.value)}
+                  />
+                </Field>
+              </div>
+            </Panel>
+            <Panel
+              title="Product images"
+              action={
+                <Link className="text-link" href="/media">
+                  Open media library →
+                </Link>
+              }
+            >
+              <div className="image-editor">
+                <div className="image-editor-preview">
+                  <MediaImage id={p.imageId} />
+                </div>
+                <div>
+                  <Field label="Primary product image">
+                    <select
+                      value={p.imageId}
+                      onChange={(e) => set("imageId", e.target.value)}
+                    >
+                      <option value="">Select image</option>
+                      {w.media
+                        .filter((m) => m.type === "image")
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.fileName}
+                          </option>
+                        ))}
+                    </select>
+                  </Field>
+                  <p className="muted small-text">
+                    Upload an approved image in the media library, then select
+                    it here. The bundled artwork is illustrative.
+                  </p>
+                </div>
+              </div>
+              <Field
+                label="Additional images"
+                hint="Choose up to 12. Hold Ctrl/Command to select multiple."
+                wide
+              >
+                <select
+                  multiple
+                  value={p.additionalImageIds}
+                  onChange={(e) =>
+                    set(
+                      "additionalImageIds",
+                      Array.from(e.target.selectedOptions).map((o) => o.value),
+                    )
+                  }
+                >
+                  {w.media
+                    .filter((m) => m.type === "image" && m.id !== p.imageId)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.fileName}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            </Panel>
+            <Panel title="Specifications & identity">
+              <div className="form-grid">
+                {(
+                  [
+                    "brand",
+                    "model",
+                    "packSize",
+                    "catalogueNumber",
+                    "sku",
+                  ] as const
+                ).map((key) => (
+                  <Field
+                    key={key}
+                    label={
+                      {
+                        brand: "Brand",
+                        model: "Model",
+                        packSize: "Pack size",
+                        catalogueNumber: "Catalogue number",
+                        sku: "Public product identity / SKU",
+                      }[key]
+                    }
+                  >
+                    <input
+                      value={p[key]}
+                      maxLength={200}
+                      onChange={(e) => set(key, e.target.value)}
+                    />
+                  </Field>
+                ))}
+              </div>
+              <p className="section-label">Confirmed specifications</p>
+              {p.specifications.map((s, i) => (
+                <div className="spec-row" key={i}>
+                  <input
+                    aria-label={`Specification ${i + 1} label`}
+                    placeholder="Label"
+                    value={s.label}
+                    onChange={(e) =>
+                      set(
+                        "specifications",
+                        p.specifications.map((x, n) =>
+                          n === i ? { ...x, label: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    aria-label={`Specification ${i + 1} value`}
+                    placeholder="Confirmed value"
+                    value={s.value}
+                    onChange={(e) =>
+                      set(
+                        "specifications",
+                        p.specifications.map((x, n) =>
+                          n === i ? { ...x, value: e.target.value } : x,
+                        ),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Remove specification ${i + 1}`}
+                    onClick={() =>
+                      set(
+                        "specifications",
+                        p.specifications.filter((_, n) => n !== i),
+                      )
+                    }
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className="button small secondary"
+                type="button"
+                onClick={() =>
+                  set("specifications", [
+                    ...p.specifications,
+                    { label: "", value: "" },
+                  ])
+                }
+              >
+                <Plus size={14} />
+                Add specification
+              </button>
+            </Panel>
+            <Panel title="Search & social metadata">
+              <SeoFields value={p.seo} onChange={(s) => set("seo", s)} />
+              <Field
+                label="Search keywords"
+                hint="Separate with commas. Keep terms specific and accurate."
+              >
+                <input
+                  value={p.keywords.join(", ")}
+                  onChange={(e) =>
+                    set(
+                      "keywords",
+                      e.target.value.split(",").map((x) => x.trim()),
+                    )
+                  }
+                />
+              </Field>
+            </Panel>
+          </div>
+          <aside className="editor-aside">
+            <Panel title="Website presentation">
+              <div className="stack">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={p.visible}
+                    onChange={(e) => set("visible", e.target.checked)}
+                  />
+                  Visible on website
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={p.featured}
+                    onChange={(e) => set("featured", e.target.checked)}
+                  />
+                  Featured product
+                </label>
+                <Field label="Sort order">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100000}
+                    value={p.sortOrder}
+                    onChange={(e) => set("sortOrder", Number(e.target.value))}
+                  />
+                </Field>
+                <p className="muted small-text">
+                  Changing these fields updates the draft. Publish to update the
+                  demo snapshot.
+                </p>
+              </div>
+            </Panel>
+            <Panel title="Product verification">
+              <div className="stack">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={p.needsReview}
+                    onChange={(e) => set("needsReview", e.target.checked)}
+                  />
+                  Needs spelling / specification review
+                </label>
+                <Field label="Review notes">
+                  <textarea
+                    value={p.reviewNotes}
+                    onChange={(e) => set("reviewNotes", e.target.value)}
+                  />
+                </Field>
+                <p className="small-text muted">
+                  A flagged product cannot be published. Never infer medical
+                  specifications from unclear source wording.
+                </p>
+              </div>
+            </Panel>
+            <Panel title="Internal notes">
+              <Field
+                label="Private admin notes"
+                hint="Excluded from published content."
+              >
+                <textarea
+                  value={p.internalNotes}
+                  onChange={(e) => set("internalNotes", e.target.value)}
+                />
+              </Field>
+            </Panel>
+            {saved && (
+              <Panel title="Workflow actions">
+                <div className="stack">
+                  <button
+                    className="button secondary"
+                    type="button"
+                    disabled={busy || dirty}
+                    onClick={() => void action("review")}
+                  >
+                    Send for review
+                  </button>
+                  <button
+                    className="button secondary"
+                    type="button"
+                    disabled={busy || dirty}
+                    onClick={() => void action("duplicate")}
+                  >
+                    <Copy size={15} />
+                    Duplicate product
+                  </button>
+                  {allowed("products.publish") && (
+                    <>
+                      {saved.published && (
+                        <button
+                          type="button"
+                          className="button secondary"
+                          disabled={busy || dirty}
+                          onClick={() => void action("unpublish")}
+                        >
+                          Unpublish
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="button danger-outline"
+                        disabled={busy || dirty}
+                        onClick={() => void action("archive")}
+                      >
+                        <Archive size={15} />
+                        Archive product
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Panel>
+            )}
+          </aside>
+        </div>
+        <div className="form-bottom">
+          <span className="muted">
+            {dirty ? "You have unsaved changes." : "All edits are saved."}
+          </span>
+          <button className="button" disabled={busy} type="submit">
+            <Save size={16} />
+            Save draft
+          </button>
+        </div>
+      </form>
+      {preview && (
+        <ProductPreview product={p} onClose={() => setPreview(false)} />
+      )}
+    </>
+  );
+}
+export function ProductPreview({
+  product: p,
+  onClose,
+}: {
+  product: AdminProduct;
+  onClose: () => void;
+}) {
+  const { workspace: w } = useWorkspace();
+  return (
+    <Modal title="Product preview" onClose={onClose} wide>
+      <p className="callout">
+        Admin-only preview of the current draft. The live website is unchanged.
+      </p>
+      <div className="product-preview">
+        <div className="preview-image">
+          <MediaImage id={p.imageId} />
+        </div>
+        <div>
+          <p className="eyebrow">
+            {w.categories.find((c) => c.id === p.categoryId)?.name ||
+              "Select category"}
+          </p>
+          <h2>{p.name || "Product name"}</h2>
+          <p>{p.shortDescription || "Add a short description."}</p>
+          <div className="preview-facts">
+            {[
+              ["Brand", p.brand],
+              ["Model", p.model],
+              ["Pack size", p.packSize],
+            ]
+              .filter(([, v]) => v)
+              .map(([k, v]) => (
+                <p key={k}>
+                  <strong>{k}</strong>
+                  {v}
+                </p>
+              ))}
+          </div>
+          <button className="button" disabled>
+            Request a quote · preview
+          </button>
+        </div>
+      </div>
+      <p className="preserve-lines">{p.description}</p>
+      {p.specifications.length > 0 && (
+        <dl className="detail-list">
+          {p.specifications.map((s, i) => (
+            <div key={i}>
+              <dt>{s.label}</dt>
+              <dd>{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <div className="seo-preview">
+        <span className="section-label">Search preview</span>
+        <small>
+          {p.seo.canonical ||
+            `${w.settings.site.websiteUrl}/products/${p.slug}`}
+        </small>
+        <h3>{p.seo.title || p.name}</h3>
+        <p>{p.seo.description || "SEO description missing."}</p>
+      </div>
+    </Modal>
+  );
+}

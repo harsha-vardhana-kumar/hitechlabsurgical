@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { parseFixed } from "../domain/money";
+import { parseFixed, inputMoney, inputQuantity, inputPercent } from "../domain/money";
 import { ValidationError } from "../domain/validation";
 import { useUnsaved, useWorkspace } from "./provider";
 import { ErrorSummary, Field } from "./ui";
@@ -25,9 +25,9 @@ export interface FormField<T> {
   disabled?: boolean;
 }
 function asString(value: unknown, type?: FormField<object>["type"]) {
-  if (type === "money" || type === "percent")
-    return String(Number(value) / 100);
-  if (type === "quantity") return String(Number(value) / 1000);
+  if (type === "money") return inputMoney(Number(value));
+  if (type === "percent") return inputPercent(Number(value));
+  if (type === "quantity") return inputQuantity(Number(value));
   return String(value ?? "");
 }
 export function RecordForm<T extends object>({

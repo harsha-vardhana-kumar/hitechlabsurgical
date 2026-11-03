@@ -49,8 +49,7 @@ JSON import/restore is not implemented.
 
 The 55 product names and categories come from the approved public catalogue.
 Sample prices, stock, taxes, parties and transactions are explicitly demo data.
-Unconfirmed legal identity, address, GSTIN, PAN, contact and banking fields are
-blank. Configure them only with verified business information.
+A fresh demo uses the confirmed legal name, trade name, GSTIN, Andhra Pradesh state code and primary phone from shared configuration. Address, PAN, official email, terms and banking details remain editable and blank until verified. Existing browser workspaces and issued document snapshots retain their saved settings.
 
 Payments record an amount against an invoice or bill; they do not move money.
 Returns are source-linked, quantity-limited, and capped by the original outstanding

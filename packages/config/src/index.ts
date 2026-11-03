@@ -1,8 +1,9 @@
+import { publicIdentity } from './public-identity';
 export const company = {
-  name: 'Hitech Lab & Surgical Solutions',
+  name: publicIdentity.legacyDisplayName,
   shortName: 'HITECH',
-  domain: 'hitechlabsurgical.com',
-  url: 'https://hitechlabsurgical.com',
+  domain: publicIdentity.domain,
+  url: publicIdentity.website,
   description: 'Laboratory equipment, diagnostic products, consumables and scientific supplies for healthcare, research and educational institutions.',
   phone: process.env.NEXT_PUBLIC_COMPANY_PHONE?.trim() || '',
   email: process.env.NEXT_PUBLIC_COMPANY_EMAIL?.trim() || '',
