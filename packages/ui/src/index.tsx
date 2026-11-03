@@ -7,3 +7,6 @@ export function SectionHeading({ eyebrow, title, children }: { eyebrow: string; 
 export function Badge({ children }: { children: ReactNode }) {
   return <span className="badge">{children}</span>;
 }
+
+/** Host apps provide the status palette; semantic label stays reusable. */
+export function StatusBadge({label,className=''}:{label:string;className?:string}) { return <span className={className}>{label}</span>; }
