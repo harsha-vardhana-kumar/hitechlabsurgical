@@ -15,7 +15,7 @@
   --navy: #0b2b45;
   --teal: #087c80;
   --ink: #18364b;
-  --muted: #637887;
+  --muted: #546b7a;
   --line: #e1e8ed;
   --background: #f5f7fa;
   --pale: #edf6f6;
@@ -487,7 +487,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #778b9a;
+  color: #546b7a;
   font-size: 12px;
   padding: 8px 0;
   text-align: left;
@@ -588,7 +588,7 @@ main#main {
   align-items: center;
   gap: 9px;
   font-size: 10px;
-  color: #80929e;
+  color: #546b7a;
   margin-bottom: 25px;
 }
 .breadcrumbs > span:last-child {
@@ -618,7 +618,7 @@ main#main {
   display: flex;
   justify-content: space-between;
   gap: 15px;
-  color: #788b99;
+  color: #546b7a;
   font-size: 9px;
 }
 .workspace-footer > span:first-child {
@@ -651,7 +651,7 @@ main#main {
 }
 .workspace-banner p {
   font-size: 10px;
-  color: #5c777a;
+  color: #48666b;
   margin-top: 4px;
   max-width: 850px;
 }
@@ -697,7 +697,7 @@ main#main {
   margin-top: 11px;
 }
 .metric > p {
-  color: #7a8d9a;
+  color: #546b7a;
   font-size: 9px;
   margin-top: 5px;
 }
@@ -963,7 +963,7 @@ main#main {
   font-weight: 700;
   border-radius: 5px;
   background: #f0f3f6;
-  color: #6a7e8c;
+  color: #546b7a;
   white-space: nowrap;
 }
 .status-published,
@@ -975,7 +975,7 @@ main#main {
 .status-review,
 .status-new,
 .status-in-progress {
-  color: #9a6a21;
+  color: #80551b;
   background: #fcf4e5;
 }
 .status-contacted,
@@ -1109,7 +1109,7 @@ table {
 }
 th {
   background: #f8fafb;
-  color: #7b8e9b;
+  color: #546b7a;
   font-size: 10px;
   font-weight: 650;
   white-space: nowrap;
@@ -1163,7 +1163,7 @@ tbody tr:last-child td {
 }
 .record-name small {
   font-size: 9px;
-  color: #8798a4;
+  color: #546b7a;
 }
 .product-cell {
   display: flex;
@@ -1212,7 +1212,7 @@ tbody tr:last-child td {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  color: #9ab0bc;
+  color: #526e7c;
   background: #f1f5f7;
   min-height: 100px;
   width: 100%;
@@ -1239,7 +1239,7 @@ tbody tr:last-child td {
   padding: 16px 22px;
   border-top: 1px solid var(--line);
   font-size: 10px;
-  color: #718795;
+  color: #546b7a;
 }
 .pagination > label {
   margin-left: auto;
@@ -1297,7 +1297,7 @@ tbody tr:last-child td {
   padding: 14px 16px;
   border: 1px solid #dbe7ec;
   background: #f1f7f8;
-  color: #577685;
+  color: #496979;
   border-radius: 6px;
   margin-bottom: 20px;
 }
@@ -1373,7 +1373,7 @@ tbody tr:last-child td {
 .field > small {
   font-size: 10px;
   font-weight: 450;
-  color: #8395a2;
+  color: #546b7a;
   line-height: 1.7;
 }
 .field input,
@@ -1420,7 +1420,7 @@ tbody tr:last-child td {
   background: #f6f9fa;
   padding: 10px;
   border-right: 1px solid #dce4e9;
-  color: #7f929f;
+  color: #546b7a;
 }
 .input-prefix input {
   border: 0;
@@ -1489,7 +1489,7 @@ tbody tr:last-child td {
   font-size: 8px;
 }
 .seo-preview > small {
-  color: #698373;
+  color: #4e6b5d;
   font-size: 10px;
   display: block;
   margin-bottom: 6px;
@@ -1501,7 +1501,7 @@ tbody tr:last-child td {
 }
 .seo-preview > p {
   font-size: 11px;
-  color: #758695;
+  color: #546b7a;
   line-height: 1.8;
   margin-top: 6px;
 }
@@ -2404,7 +2404,7 @@ tbody tr:last-child td {
   .topbar-actions {
     gap: 5px;
   }
-  .global-search > span {
+  .global-search > span:not(.sr-only) {
     font-size: 11px;
   }
   .global-search kbd {

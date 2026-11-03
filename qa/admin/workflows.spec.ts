@@ -69,6 +69,7 @@ test("catalogue release, enquiry history and centralized settings through the pr
   await expect(
     page.getByRole("alert").filter({ hasText: "Add a short description" }),
   ).toBeVisible();
+  await expect(page.locator(".editor-status").first()).toContainText("Draft");
   await page
     .getByRole("combobox", { name: "Category", exact: true })
     .selectOption({ label: "QA sample collection" });
@@ -288,7 +289,7 @@ test("role switching restricts route and search access; Owner can manage demo us
   page,
 }) => {
   await page.goto("/");
-  await click(page, "Open user menu");
+  await page.getByRole("button", { name: /Open user menu/ }).click();
   await page.getByRole("button", { name: /Demo Viewer Viewer/ }).click();
   await expect(
     page.getByRole("link", { name: "Products", exact: true }),
@@ -298,7 +299,7 @@ test("role switching restricts route and search access; Owner can manage demo us
   await expect(
     page.getByRole("heading", { name: "Permission required" }),
   ).toBeVisible();
-  await click(page, "Open user menu");
+  await page.getByRole("button", { name: /Open user menu/ }).click();
   await page.getByRole("button", { name: /Demo Owner Owner/ }).click();
   await page.getByRole("link", { name: "Users & roles", exact: true }).click();
   await expect(
@@ -369,6 +370,7 @@ for (const width of [320, 375, 430, 768, 1024, 1280, 1440, 1920]) {
       await modal.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
     ).toBeTruthy();
     await modal.getByRole("button", { name: "Close dialog" }).click();
+    await expect(page.getByRole("button", { name: /Search workspace/ })).toBeVisible();
     if (width <= 768) {
       await click(page, "Open navigation");
       const nav = page.getByRole("dialog", { name: "Navigation" });

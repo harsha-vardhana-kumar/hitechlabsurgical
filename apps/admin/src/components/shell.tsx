@@ -283,6 +283,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Search size={18} />
             <span>Search anything…</span>
             <kbd>⌘ K</kbd>
+            <span className="sr-only">Search workspace</span>
           </button>
           <div className="topbar-actions">
             <a
@@ -307,7 +308,6 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
             <button
               className="user-button"
-              aria-label="Open user menu"
               onClick={() => setUserMenu(true)}
             >
               <span className="avatar">
@@ -321,6 +321,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <strong>{session.name}</strong>
                 <small>{session.role}</small>
               </div>
+              <span className="sr-only">Open user menu</span>
               <ChevronDown size={15} />
             </button>
           </div>

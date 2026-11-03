@@ -220,12 +220,12 @@ export function Shell({ children: content }: { children: ReactNode }) {
           <div className="actions">
             <button
               className="global-search"
-              aria-label="Search workspace"
               onClick={() => search.current?.showModal()}
             >
               <Search size={15} />
               <span>Search anything…</span>
               <kbd>⌘ K</kbd>
+              <span className="sr-only">Search workspace</span>
             </button>
             <details className="notification">
               <summary aria-label="Notifications">
@@ -290,7 +290,7 @@ export function Shell({ children: content }: { children: ReactNode }) {
       <dialog
         className="search-dialog"
         ref={search}
-        aria-label="Search workspace"
+        aria-label="Search anything…"
       >
         <div className="search-dialog-head">
           <Search size={19} />
