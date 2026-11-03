@@ -41,13 +41,11 @@ test("catalogue release, enquiry history and centralized settings through the pr
   const fixture = await readFile(
     resolve("apps/admin/public/images/consumables.webp"),
   );
-  await upload
-    .getByLabel("Image file")
-    .setInputFiles({
-      name: "sample-qa-photo.webp",
-      mimeType: "image/webp",
-      buffer: fixture,
-    });
+  await upload.getByLabel("Image file").setInputFiles({
+    name: "sample-qa-photo.webp",
+    mimeType: "image/webp",
+    buffer: fixture,
+  });
   await upload
     .getByLabel(/^Alt text/)
     .fill("Illustrative sample for the catalogue walkthrough");
@@ -96,7 +94,10 @@ test("catalogue release, enquiry history and centralized settings through the pr
   await click(page, "Preview");
   const preview = page.getByRole("dialog", { name: "Product preview" });
   await expect(
-    preview.getByRole("heading", { name: "QA sample catalogue product" }),
+    preview.getByRole("heading", {
+      name: "QA sample catalogue product",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
     preview.getByRole("img", {
@@ -171,7 +172,7 @@ test("catalogue release, enquiry history and centralized settings through the pr
     .getByLabel("Organisation", { exact: true })
     .fill("Demo workflow laboratory");
   await page
-    .getByLabel("Product", { exact: true })
+    .getByRole("combobox", { name: "Product", exact: true })
     .selectOption({ label: "QA sample catalogue product" });
   await page
     .getByLabel("Message *")
@@ -181,9 +182,11 @@ test("catalogue release, enquiry history and centralized settings through the pr
     page.getByRole("heading", { name: "Demo workflow laboratory" }),
   ).toBeVisible();
   const enquiryUrl = page.url();
-  await page.getByLabel("Status", { exact: true }).selectOption("Contacted");
   await page
-    .getByLabel("Assigned to", { exact: true })
+    .getByRole("combobox", { name: "Status", exact: true })
+    .selectOption("Contacted");
+  await page
+    .getByRole("combobox", { name: "Assigned to", exact: true })
     .selectOption({ label: "Demo Sales" });
   await page.getByLabel(/^Internal notes/).fill("QA followup marker 482");
   await click(page, "Save updates");
@@ -196,6 +199,12 @@ test("catalogue release, enquiry history and centralized settings through the pr
   ).toBeVisible();
   await page.keyboard.press("Escape");
 
+  await page.goto("/enquiries/quotes");
+  await page.getByLabel("Search records").fill("Demo workflow laboratory");
+  await page.getByLabel("Enquiry status filter").selectOption("Contacted");
+  await expect(
+    page.getByRole("link", { name: /Demo workflow laboratory/ }),
+  ).toBeVisible();
   await page.goto(productUrl);
   await click(page, "Archive product");
   await page
@@ -218,9 +227,24 @@ test("catalogue release, enquiry history and centralized settings through the pr
   await expect(page.getByLabel(/^Internal notes/)).toHaveValue(
     "QA followup marker 482",
   );
-  await expect(page.getByLabel("Status", { exact: true })).toHaveValue(
-    "Contacted",
+  await expect(
+    page.getByRole("combobox", { name: "Status", exact: true }),
+  ).toHaveValue("Contacted");
+  await page.goto("/publishing");
+  await click(page, "Prepare public snapshot");
+  const archivedFile = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Save JSON" }).click();
+  const afterArchive = JSON.parse(
+    await readFile((await (await archivedFile).path())!, "utf8"),
   );
+  expect(afterArchive.products).toHaveLength(0);
+  await page.goto("/content/home");
+  await page.getByLabel("Hero heading").fill("");
+  await click(page, "Save draft");
+  await click(page, "Publish");
+  await expect(
+    page.getByRole("alert").filter({ hasText: /heading/i }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -289,7 +313,7 @@ test("role switching restricts route and search access; Owner can manage demo us
   ).toBeVisible();
 });
 
-for (const width of [320, 375, 430, 768, 1024, 1440, 1920]) {
+for (const width of [320, 375, 430, 768, 1024, 1280, 1440, 1920]) {
   test(`responsive pages, links and image assets at ${width}px`, async ({
     page,
   }) => {
@@ -304,6 +328,9 @@ for (const width of [320, 375, 430, 768, 1024, 1440, 1920]) {
       ["/products", "Products"],
       ["/products/HL-001", "Hemometer"],
       ["/categories", "Categories"],
+      ["/categories/new", "Add category"],
+      ["/seo/pages", "Page metadata"],
+      ["/seo/products", "Product SEO"],
       ["/media", "Media library"],
       ["/enquiries/quotes/sample-enquiry-1", "Demo Central Laboratory"],
       ["/settings/contact", "Contact information"],
@@ -330,6 +357,18 @@ for (const width of [320, 375, 430, 768, 1024, 1440, 1920]) {
       if (url === "/" && width === 1440)
         await page.screenshot({ path: "test-results/admin-dashboard.png" });
     }
+    await page.goto("/seo/pages");
+    await page
+      .getByRole("button", { name: /Edit metadata/ })
+      .first()
+      .click();
+    const modal = page.getByRole("dialog");
+    await expect(modal).toBeVisible();
+    await expect(modal.getByLabel(/^Meta title/)).toBeVisible();
+    expect(
+      await modal.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+    ).toBeTruthy();
+    await modal.getByRole("button", { name: "Close dialog" }).click();
     if (width <= 768) {
       await click(page, "Open navigation");
       const nav = page.getByRole("dialog", { name: "Navigation" });
