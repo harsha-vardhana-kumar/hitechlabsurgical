@@ -7,7 +7,7 @@ import {
   batchStatus,
 } from "../domain/selectors";
 import { today } from "../domain/dates";
-import { divideRound, integer } from "../domain/money";
+import { divideRound, integer, inputMoney } from "../domain/money";
 export const reportNames = {
   sales: "Sales summary",
   customers: "Sales by customer",
@@ -86,8 +86,8 @@ export function buildReport(
             cells: [item.name, item.unit, 0, 0, 0],
           };
           r.cells[2] = Number(r.cells[2]) + (n * item.quantityMilli) / 1000;
-          r.cells[3] = Number(r.cells[3]) + n * t.lines[i].taxable;
-          r.cells[4] = Number(r.cells[4]) + n * t.lines[i].tax;
+          r.cells[3] = integer(Number(r.cells[3]) + n * t.lines[i].taxable);
+          r.cells[4] = integer(Number(r.cells[4]) + n * t.lines[i].tax);
           map.set(item.productId, r);
         });
       else {
@@ -95,9 +95,9 @@ export function buildReport(
           id: d.partyId,
           cells: [d.partySnapshot?.name || "", 0, 0, 0],
         };
-        r.cells[1] = Number(r.cells[1]) + n * t.taxable;
-        r.cells[2] = Number(r.cells[2]) + n * t.tax;
-        r.cells[3] = Number(r.cells[3]) + n * t.grandTotal;
+        r.cells[1] = integer(Number(r.cells[1]) + n * t.taxable);
+        r.cells[2] = integer(Number(r.cells[2]) + n * t.tax);
+        r.cells[3] = integer(Number(r.cells[3]) + n * t.grandTotal);
         map.set(d.partyId, r);
       }
     }
@@ -270,11 +270,9 @@ export function reportCsv(report: Report) {
       ...report.rows.map((r) =>
         r.cells
           .map((v, i) =>
-            escape(
-              report.columns[i].type === "money" && typeof v === "number"
-                ? Number((v / 100).toFixed(2))
-                : v,
-            ),
+            report.columns[i].type === "money" && typeof v === "number"
+              ? `"${inputMoney(v)}"`
+              : escape(v),
           )
           .join(","),
       ),

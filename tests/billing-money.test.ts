@@ -1,8 +1,12 @@
+import { money } from "../apps/billing/src/domain/dates";
+import { reportCsv } from "../apps/billing/src/services/reports";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   calculate,
   parseFixed,
+  inputMoney,
+  inputQuantity,
   balance,
 } from "../apps/billing/src/domain/money";
 import type { LineItem, TaxPolicy } from "../apps/billing/src/domain/types";
@@ -198,4 +202,14 @@ test("all line allocations and tax components reconcile with the grand total", (
     1493,
   );
   assert.equal(t.subtotal - t.discount, t.taxable);
+});
+
+test("forms, currency display and CSV round trip every supported paise without float conversion", () => {
+  const max = Number.MAX_SAFE_INTEGER;
+  assert.equal(inputMoney(max), "90071992547409.91");
+  assert.equal(parseFixed(inputMoney(max)), max);
+  assert.equal(money(max), "₹9,00,71,99,25,47,409.91");
+  assert.equal(parseFixed(inputQuantity(max), 3), max);
+  assert.equal(inputMoney(-1), "-0.01");
+  assert.ok(reportCsv({ columns: [{ title: "Balance", type: "money" }], rows: [{ id: "test", cells: [-max] }], note: "" }).includes('"-90071992547409.91"'));
 });
