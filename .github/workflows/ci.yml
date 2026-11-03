@@ -18,3 +18,14 @@ jobs:
       - run: npm run check
         env:
           NEXT_TELEMETRY_DISABLED: 1
+      - name: Install Chromium for admin workflow checks
+        run: npx playwright install --with-deps chromium
+      - name: Verify the production admin in Chromium
+        run: npm run test:admin:browser
+      - name: Retain browser results and desktop preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-browser-validation
+          path: test-results/
+          retention-days: 7

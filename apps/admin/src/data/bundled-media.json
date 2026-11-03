@@ -1,0 +1,32 @@
+{
+  "consumables.webp": {
+    "bytes": 128294,
+    "width": 1536,
+    "height": 1024
+  },
+  "laboratory.webp": {
+    "bytes": 105768,
+    "width": 1536,
+    "height": 1024
+  },
+  "reagents.webp": {
+    "bytes": 130670,
+    "width": 1536,
+    "height": 1024
+  },
+  "hitech-logo.svg": {
+    "bytes": 10703,
+    "width": 392,
+    "height": 96
+  },
+  "hitech-mark.svg": {
+    "bytes": 361,
+    "width": 96,
+    "height": 96
+  },
+  "favicon.svg": {
+    "bytes": 268,
+    "width": 96,
+    "height": 96
+  }
+}

@@ -1,3 +1,4 @@
+import { publicIdentity } from '@hitech/config/public-identity';
 import type {
   BusinessSettings,
   DocumentKind,
@@ -26,7 +27,7 @@ const kinds: DocumentKind[] = [
 export function defaultSettings(): BusinessSettings {
   const prefixes = ["QT", "INV", "PO", "PB", "CN", "PR"];
   return {
-    name: "Hitech Lab & Surgical Solutions",
+    name: publicIdentity.legacyDisplayName,
     legalName: "",
     phone: "",
     email: "",
@@ -38,7 +39,7 @@ export function defaultSettings(): BusinessSettings {
     country: "",
     gstin: "",
     pan: "",
-    website: "hitechlabsurgical.com",
+    website: publicIdentity.domain,
     logo: "/brand/hitech-logo.svg",
     gstEnabled: false,
     defaultTaxBps: 0,

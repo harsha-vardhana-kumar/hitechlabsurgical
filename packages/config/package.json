@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./business": "./src/business.ts"
+    "./business": "./src/business.ts",
+    "./public-identity": "./src/public-identity.ts"
   },
   "dependencies": {
     "@hitech/types": "*"

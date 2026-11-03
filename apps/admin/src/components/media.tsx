@@ -1,18 +1,304 @@
-'use client';
-import { useState } from 'react';
-import { Upload,Search,ImageIcon,Trash2,Save } from 'lucide-react';
-import type { MediaAsset } from '@hitech/types/admin';
-import { humanDate } from '@hitech/utils';
-import { useWorkspace } from './provider';
-import { PageHeader,Panel,Field,ErrorSummary,Modal,Empty,Status } from './ui';
-import { MediaImage } from './media-image';
-import { mediaUsage } from '../domain/projections';
-import { Access } from './access';
-export default function Media(){return <Access permission="media.manage"><MediaLibrary/></Access>;}
-function MediaLibrary(){
-  const {workspace:w,upload,notify,busy}=useWorkspace();const [query,setQuery]=useState('');const [filter,setFilter]=useState('all');const [uploading,setUploading]=useState(false);const [editing,setEditing]=useState<MediaAsset>();const [file,setFile]=useState<File>();const [alt,setAlt]=useState('');const [error,setError]=useState('');
-  const add=async()=>{setError('');if(!file){setError('Choose an image first.');return;}try{await upload(file,alt);notify('Image uploaded to local demo storage.');setUploading(false);setFile(undefined);setAlt('');}catch(e){setError(e instanceof Error?e.message:'Upload failed.');}};
-  const rows=w.media.filter(m=>(filter==='all'||m.type===filter)&&`${m.fileName} ${m.alt} ${m.caption}`.toLowerCase().includes(query.toLowerCase()));
-  return <><PageHeader title="Media library" description="Approved artwork and product images, with accessible descriptions and usage tracking." actions={<button className="button" onClick={()=>{setError('');setUploading(true);}}><Upload size={16}/>Upload image</button>}/><div className="media-toolbar"><label className="search-field"><Search size={17}/><input aria-label="Search media" placeholder="Search images, alt text…" value={query} onChange={e=>setQuery(e.target.value)}/></label><select aria-label="Media type" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All media</option><option value="image">Images</option><option value="logo">Brand assets</option></select><span className="muted">{rows.length} assets</span></div>{rows.length?<div className="media-grid">{rows.map(m=><button key={m.id} className="media-card" onClick={()=>setEditing(m)}><div className={`media-card-image ${m.type==='logo'?'brand-image':''}`}><MediaImage id={m.id}/></div><div className="media-card-body"><strong>{m.fileName}</strong><span>{m.source==='bundled'?'Bundled artwork':`${Math.round(m.bytes/1024)} KB`} · {m.width} × {m.height}</span><div><Status value={m.type==='logo'?'Brand':'Image'}/><small>{mediaUsage(w,m.id).length} references</small></div></div></button>)}</div>:<Panel><Empty title="No matching media"/></Panel>}<p className="page-note">PNG, JPEG and WebP · Maximum 5 MB · 32–8192 px per dimension. Uploaded files stay in this browser. Approved SVG branding is bundled and cannot be replaced by unvalidated uploads.</p>{uploading&&<Modal title="Upload an image" onClose={()=>setUploading(false)}><ErrorSummary message={error}/><form onSubmit={e=>{e.preventDefault();void add();}}><label className="upload-zone"><Upload size={30}/><strong>Choose a product or website image</strong><span>PNG, JPEG or WebP, up to 5 MB</span><input aria-label="Image file" type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>setFile(e.target.files?.[0])}/></label><Field label="Alt text *" hint="Describe the image for people using screen readers."><input value={alt} maxLength={300} onChange={e=>setAlt(e.target.value)} required/></Field><div className="dialog-actions"><button type="button" className="button secondary" onClick={()=>setUploading(false)}>Cancel</button><button className="button" disabled={busy} type="submit"><Upload size={16}/>{busy?'Validating…':'Upload image'}</button></div></form></Modal>}{editing&&<MediaDetails key={editing.id} asset={editing} onClose={()=>setEditing(undefined)}/>}</>;
+"use client";
+import { useState } from "react";
+import { Upload, Search, ImageIcon, Trash2, Save } from "lucide-react";
+import type { MediaAsset } from "@hitech/types/admin";
+import { humanDate } from "@hitech/utils";
+import { useWorkspace } from "./provider";
+import {
+  PageHeader,
+  Panel,
+  Field,
+  ErrorSummary,
+  Modal,
+  Empty,
+  Status,
+} from "./ui";
+import { MediaImage } from "./media-image";
+import { mediaUsage } from "../domain/projections";
+import { Access } from "./access";
+export default function Media() {
+  return (
+    <Access permission="media.manage">
+      <MediaLibrary />
+    </Access>
+  );
 }
-function MediaDetails({asset,onClose}:{asset:MediaAsset;onClose:()=>void}){const {workspace:w,run,notify,confirm,busy}=useWorkspace();const [value,setValue]=useState(asset);const [error,setError]=useState('');const usage=mediaUsage(w,asset.id);const save=async()=>{try{await run({type:'media.save',media:value});notify('Image descriptions updated.');onClose();}catch(e){setError(e instanceof Error?e.message:'Save failed.');}};const remove=async()=>{if(!await confirm({title:'Delete this image?',message:'This will remove the unused image and its locally stored file.',label:'Delete image'}))return;try{await run({type:'media.delete',id:asset.id,confirmed:true});notify('Image removed.');onClose();}catch(e){setError(e instanceof Error?e.message:'Delete failed.');}};return <Modal title="Asset details" onClose={()=>{if(value.alt!==asset.alt||value.caption!==asset.caption){void confirm({title:'Discard image details?',message:'Your unsaved alt text or caption will be discarded.',label:'Discard changes'}).then(ok=>{if(ok)onClose();});}else onClose();}} wide><ErrorSummary message={error}/><div className="media-detail-grid"><div className="media-detail-image"><MediaImage id={asset.id}/></div><div><h3>{asset.fileName}</h3><p className="muted small-text">{asset.mime} · {asset.width} × {asset.height}<br/>Added {humanDate(asset.uploadedAt)}</p><Field label="Alt text"><input value={value.alt} maxLength={300} onChange={e=>setValue({...value,alt:e.target.value})}/></Field><Field label="Caption"><textarea value={value.caption} maxLength={1000} onChange={e=>setValue({...value,caption:e.target.value})}/></Field><p className="section-label">Usage references</p>{usage.length?<ul className="usage-list">{usage.map(u=><li key={u}>{u}</li>)}</ul>:<p className="muted small-text"><ImageIcon size={14}/> Not used in any draft or published content.</p>}</div></div><div className="dialog-actions"><button className="button danger-outline" disabled={busy||usage.length>0||asset.source==='bundled'} onClick={()=>void remove()}><Trash2 size={15}/>Delete unused image</button><button className="button" disabled={busy} onClick={()=>void save()}><Save size={15}/>Save details</button></div></Modal>;}
+function MediaLibrary() {
+  const { workspace: w, upload, notify, busy } = useWorkspace();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState<MediaAsset>();
+  const [file, setFile] = useState<File>();
+  const [alt, setAlt] = useState("");
+  const [error, setError] = useState("");
+  const add = async () => {
+    setError("");
+    if (!file) {
+      setError("Choose an image first.");
+      return;
+    }
+    try {
+      await upload(file, alt);
+      notify("Image uploaded to local demo storage.");
+      setUploading(false);
+      setFile(undefined);
+      setAlt("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed.");
+    }
+  };
+  const rows = w.media.filter(
+    (m) =>
+      (filter === "all" || m.type === filter) &&
+      `${m.fileName} ${m.alt} ${m.caption}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  return (
+    <>
+      <PageHeader
+        title="Media library"
+        description="Approved artwork and product images, with accessible descriptions and usage tracking."
+        actions={
+          <button
+            className="button"
+            onClick={() => {
+              setError("");
+              setUploading(true);
+            }}
+          >
+            <Upload size={16} />
+            Upload image
+          </button>
+        }
+      />
+      <div className="media-toolbar">
+        <label className="search-field">
+          <Search size={17} />
+          <input
+            aria-label="Search media"
+            placeholder="Search images, alt text…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <select
+          aria-label="Media type"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="all">All media</option>
+          <option value="image">Images</option>
+          <option value="logo">Brand assets</option>
+        </select>
+        <span className="muted">{rows.length} assets</span>
+      </div>
+      {rows.length ? (
+        <div className="media-grid">
+          {rows.map((m) => (
+            <button
+              key={m.id}
+              className="media-card"
+              onClick={() => setEditing(m)}
+            >
+              <div
+                className={`media-card-image ${m.type === "logo" ? "brand-image" : ""}`}
+              >
+                <MediaImage id={m.id} />
+              </div>
+              <div className="media-card-body">
+                <strong>{m.fileName}</strong>
+                <span>
+                  {m.source === "bundled"
+                    ? "Bundled artwork"
+                    : `${Math.round(m.bytes / 1024)} KB`}{" "}
+                  · {m.width} × {m.height}
+                </span>
+                <div>
+                  <Status value={m.type === "logo" ? "Brand" : "Image"} />
+                  <small>{mediaUsage(w, m.id).length} references</small>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <Panel>
+          <Empty title="No matching media" />
+        </Panel>
+      )}
+      <p className="page-note">
+        PNG, JPEG and WebP · Maximum 5 MB · 32–8192 px per dimension. Uploaded
+        files stay in this browser. Approved SVG branding is bundled and cannot
+        be replaced by unvalidated uploads.
+      </p>
+      {uploading && (
+        <Modal title="Upload an image" onClose={() => setUploading(false)}>
+          <ErrorSummary message={error} />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void add();
+            }}
+          >
+            <label className="upload-zone">
+              <Upload size={30} />
+              <strong>Choose a product or website image</strong>
+              <span>PNG, JPEG or WebP, up to 5 MB</span>
+              <input
+                aria-label="Image file"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => setFile(e.target.files?.[0])}
+              />
+            </label>
+            <Field
+              label="Alt text *"
+              hint="Describe the image for people using screen readers."
+            >
+              <input
+                value={alt}
+                maxLength={300}
+                onChange={(e) => setAlt(e.target.value)}
+                required
+              />
+            </Field>
+            <div className="dialog-actions">
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setUploading(false)}
+              >
+                Cancel
+              </button>
+              <button className="button" disabled={busy} type="submit">
+                <Upload size={16} />
+                {busy ? "Validating…" : "Upload image"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {editing && (
+        <MediaDetails
+          key={editing.id}
+          asset={editing}
+          onClose={() => setEditing(undefined)}
+        />
+      )}
+    </>
+  );
+}
+function MediaDetails({
+  asset,
+  onClose,
+}: {
+  asset: MediaAsset;
+  onClose: () => void;
+}) {
+  const { workspace: w, run, notify, confirm, busy } = useWorkspace();
+  const [value, setValue] = useState(asset);
+  const [error, setError] = useState("");
+  const usage = mediaUsage(w, asset.id);
+  const save = async () => {
+    try {
+      await run({ type: "media.save", media: value });
+      notify("Image descriptions updated.");
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed.");
+    }
+  };
+  const remove = async () => {
+    if (
+      !(await confirm({
+        title: "Delete this image?",
+        message:
+          "This will remove the unused image and its locally stored file.",
+        label: "Delete image",
+      }))
+    )
+      return;
+    try {
+      await run({ type: "media.delete", id: asset.id, confirmed: true });
+      notify("Image removed.");
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed.");
+    }
+  };
+  return (
+    <Modal
+      title="Asset details"
+      onClose={() => {
+        if (value.alt !== asset.alt || value.caption !== asset.caption) {
+          void confirm({
+            title: "Discard image details?",
+            message: "Your unsaved alt text or caption will be discarded.",
+            label: "Discard changes",
+          }).then((ok) => {
+            if (ok) onClose();
+          });
+        } else onClose();
+      }}
+      wide
+    >
+      <ErrorSummary message={error} />
+      <div className="media-detail-grid">
+        <div className="media-detail-image">
+          <MediaImage id={asset.id} />
+        </div>
+        <div>
+          <h3>{asset.fileName}</h3>
+          <p className="muted small-text">
+            {asset.mime} · {asset.width} × {asset.height}
+            <br />
+            Added {humanDate(asset.uploadedAt)}
+          </p>
+          <Field label="Alt text">
+            <input
+              value={value.alt}
+              maxLength={300}
+              onChange={(e) => setValue({ ...value, alt: e.target.value })}
+            />
+          </Field>
+          <Field label="Caption">
+            <textarea
+              value={value.caption}
+              maxLength={1000}
+              onChange={(e) => setValue({ ...value, caption: e.target.value })}
+            />
+          </Field>
+          <p className="section-label">Usage references</p>
+          {usage.length ? (
+            <ul className="usage-list">
+              {usage.map((u) => (
+                <li key={u}>{u}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small-text">
+              <ImageIcon size={14} /> Not used in any draft or published
+              content.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="dialog-actions">
+        <button
+          className="button danger-outline"
+          disabled={busy || usage.length > 0 || asset.source === "bundled"}
+          onClick={() => void remove()}
+        >
+          <Trash2 size={15} />
+          Delete unused image
+        </button>
+        <button className="button" disabled={busy} onClick={() => void save()}>
+          <Save size={15} />
+          Save details
+        </button>
+      </div>
+    </Modal>
+  );
+}

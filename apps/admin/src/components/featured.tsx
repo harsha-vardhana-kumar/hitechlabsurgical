@@ -1,10 +1,188 @@
-'use client';
-import Link from 'next/link';
-import { useState } from 'react';
-import { ArrowUp,ArrowDown,Plus,X,Save,Star } from 'lucide-react';
-import { useWorkspace,useDraft } from './provider';
-import { PageHeader,Panel,Status,ErrorSummary,Empty } from './ui';
-import { MediaImage } from './media-image';
-import { Access } from './access';
-export default function Featured(){return <Access permission="settings.manage"><FeaturedEditor/></Access>;}
-function FeaturedEditor(){const {workspace:w,run,notify,busy}=useWorkspace();const {value:s,setValue,clean,dirty}=useDraft(w.settings);const [error,setError]=useState('');const ids=s.site.homepageFeaturedIds;const reorder=(index:number,delta:number)=>{const next=[...ids];[next[index],next[index+delta]]=[next[index+delta],next[index]];setValue({...s,site:{...s.site,homepageFeaturedIds:next}});};const save=async()=>{try{await run({type:'settings.save',settings:s,expectedRevision:s.revision});clean({...s,revision:s.revision+1});notify('Homepage selection saved. Publish settings to update the demo snapshot.');}catch(e){setError(e instanceof Error?e.message:'Save failed.');}};return <><PageHeader title="Featured products" description="Curate and order the homepage selection without changing your product catalogue order." actions={<button className="button" disabled={busy} onClick={()=>void save()}><Save size={16}/>Save selection</button>}/><ErrorSummary message={error}/><div className="editor-grid"><Panel title="Homepage selection" action={<span className="count-pill">{ids.length} selected</span>}><label className="check featured-toggle"><input type="checkbox" checked={s.site.showFeatured} onChange={e=>setValue({...s,site:{...s.site,showFeatured:e.target.checked}})}/>Show featured products section on homepage</label>{ids.length?<div className="featured-list">{ids.map((id,i)=>{const p=w.products.find(p=>p.id===id)!;return <div key={id}><span className="order-number">{String(i+1).padStart(2,'0')}</span><span className="product-thumb"><MediaImage id={p.imageId}/></span><div className="flex-grow"><Link href={`/products/${id}`}><strong>{p.name}</strong></Link><p className="small-text muted">{p.published?'Published snapshot available':'Publish this product before publishing the selection'}</p></div><div className="actions"><button className="icon-button" disabled={i===0} aria-label={`Move ${p.name} up`} onClick={()=>reorder(i,-1)}><ArrowUp size={14}/></button><button className="icon-button" disabled={i===ids.length-1} aria-label={`Move ${p.name} down`} onClick={()=>reorder(i,1)}><ArrowDown size={14}/></button><button className="icon-button" aria-label={`Remove ${p.name} from homepage`} onClick={()=>setValue({...s,site:{...s.site,homepageFeaturedIds:ids.filter(x=>x!==id)}})}><X size={14}/></button></div></div>;})}</div>:<Empty title="Curate your homepage" description="Choose featured products from the list to set the homepage selection."/>}</Panel><Panel title="Available featured products"><div className="record-list">{w.products.filter(p=>p.featured&&p.status!=='Archived'&&!ids.includes(p.id)).map(p=><div key={p.id}><Star size={16}/><div><strong>{p.name}</strong><Status value={p.status}/></div><button aria-label={`Feature ${p.name} on homepage`} className="icon-button" onClick={()=>setValue({...s,site:{...s.site,homepageFeaturedIds:[...ids,p.id]}})}><Plus size={17}/></button></div>)}</div><p className="panel-note">Mark products as featured in their product editor to make them available here.</p></Panel></div><div className="form-bottom"><span>{dirty?'Unsaved changes':'Selection saved as draft'}</span><Link href="/publishing" className="text-link">Review publishing status →</Link></div></>;}
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { ArrowUp, ArrowDown, Plus, X, Save, Star } from "lucide-react";
+import { useWorkspace, useDraft } from "./provider";
+import { PageHeader, Panel, Status, ErrorSummary, Empty } from "./ui";
+import { MediaImage } from "./media-image";
+import { Access } from "./access";
+export default function Featured() {
+  return (
+    <Access permission="settings.manage">
+      <FeaturedEditor />
+    </Access>
+  );
+}
+function FeaturedEditor() {
+  const { workspace: w, run, notify, busy } = useWorkspace();
+  const { value: s, setValue, clean, dirty } = useDraft(w.settings);
+  const [error, setError] = useState("");
+  const ids = s.site.homepageFeaturedIds;
+  const reorder = (index: number, delta: number) => {
+    const next = [...ids];
+    [next[index], next[index + delta]] = [next[index + delta], next[index]];
+    setValue({ ...s, site: { ...s.site, homepageFeaturedIds: next } });
+  };
+  const save = async () => {
+    try {
+      await run({
+        type: "settings.save",
+        settings: s,
+        expectedRevision: s.revision,
+      });
+      clean({ ...s, revision: s.revision + 1 });
+      notify(
+        "Homepage selection saved. Publish settings to update the demo snapshot.",
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed.");
+    }
+  };
+  return (
+    <>
+      <PageHeader
+        title="Featured products"
+        description="Curate and order the homepage selection without changing your product catalogue order."
+        actions={
+          <button
+            className="button"
+            disabled={busy}
+            onClick={() => void save()}
+          >
+            <Save size={16} />
+            Save selection
+          </button>
+        }
+      />
+      <ErrorSummary message={error} />
+      <div className="editor-grid">
+        <Panel
+          title="Homepage selection"
+          action={<span className="count-pill">{ids.length} selected</span>}
+        >
+          <label className="check featured-toggle">
+            <input
+              type="checkbox"
+              checked={s.site.showFeatured}
+              onChange={(e) =>
+                setValue({
+                  ...s,
+                  site: { ...s.site, showFeatured: e.target.checked },
+                })
+              }
+            />
+            Show featured products section on homepage
+          </label>
+          {ids.length ? (
+            <div className="featured-list">
+              {ids.map((id, i) => {
+                const p = w.products.find((p) => p.id === id)!;
+                return (
+                  <div key={id}>
+                    <span className="order-number">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="product-thumb">
+                      <MediaImage id={p.imageId} />
+                    </span>
+                    <div className="flex-grow">
+                      <Link href={`/products/${id}`}>
+                        <strong>{p.name}</strong>
+                      </Link>
+                      <p className="small-text muted">
+                        {p.published
+                          ? "Published snapshot available"
+                          : "Publish this product before publishing the selection"}
+                      </p>
+                    </div>
+                    <div className="actions">
+                      <button
+                        className="icon-button"
+                        disabled={i === 0}
+                        aria-label={`Move ${p.name} up`}
+                        onClick={() => reorder(i, -1)}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        disabled={i === ids.length - 1}
+                        aria-label={`Move ${p.name} down`}
+                        onClick={() => reorder(i, 1)}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label={`Remove ${p.name} from homepage`}
+                        onClick={() =>
+                          setValue({
+                            ...s,
+                            site: {
+                              ...s.site,
+                              homepageFeaturedIds: ids.filter((x) => x !== id),
+                            },
+                          })
+                        }
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <Empty
+              title="Curate your homepage"
+              description="Choose featured products from the list to set the homepage selection."
+            />
+          )}
+        </Panel>
+        <Panel title="Available featured products">
+          <div className="record-list">
+            {w.products
+              .filter(
+                (p) =>
+                  p.featured && p.status !== "Archived" && !ids.includes(p.id),
+              )
+              .map((p) => (
+                <div key={p.id}>
+                  <Star size={16} />
+                  <div>
+                    <strong>{p.name}</strong>
+                    <Status value={p.status} />
+                  </div>
+                  <button
+                    aria-label={`Feature ${p.name} on homepage`}
+                    className="icon-button"
+                    onClick={() =>
+                      setValue({
+                        ...s,
+                        site: {
+                          ...s.site,
+                          homepageFeaturedIds: [...ids, p.id],
+                        },
+                      })
+                    }
+                  >
+                    <Plus size={17} />
+                  </button>
+                </div>
+              ))}
+          </div>
+          <p className="panel-note">
+            Mark products as featured in their product editor to make them
+            available here.
+          </p>
+        </Panel>
+      </div>
+      <div className="form-bottom">
+        <span>{dirty ? "Unsaved changes" : "Selection saved as draft"}</span>
+        <Link href="/publishing" className="text-link">
+          Review publishing status →
+        </Link>
+      </div>
+    </>
+  );
+}
